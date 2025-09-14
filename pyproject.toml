@@ -1,0 +1,19 @@
+[project]
+name = "toddlertransducer"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Edward Parry",email = "red_parry@yahoo.co.uk"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+        "fake_rpi (>=0.7.1) ; sys_platform == 'win32'"
+]
+
+[tool.poetry]
+packages = [{include = "toddler_transducer", from = "src"}]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
