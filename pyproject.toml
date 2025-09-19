@@ -8,11 +8,20 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-        "fake_rpi (>=0.7.1) ; sys_platform == 'win32'"
+    "fake_rpi (>=0.7.1) ; sys_platform == 'win32'",
+    "mfrc522-python",
+    "pygame"
 ]
 
 [tool.poetry]
 packages = [{include = "toddler_transducer", from = "src"}]
+
+[tool.poetry.group.dev.dependencies]
+black = "^25.9.0"
+flake8 = "^7.3.0"
+isort = "^6.0.1"
+mypy = "^1.18.2"
+pylint = "^3.3.8"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
