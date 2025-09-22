@@ -10,7 +10,8 @@ requires-python = ">=3.12"
 dependencies = [
     "fake_rpi (>=0.7.1) ; sys_platform == 'win32'",
     "mfrc522-python",
-    "pygame"
+    "python-vlc",
+    "flask"
 ]
 
 [tool.poetry]
@@ -27,3 +28,6 @@ pytest = "8.4.2"
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+launch_toddler_transducer = "toddler_transducer.web_ui.launch:launch_toddler_transducer"
