@@ -9,42 +9,39 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 <body>
-   <h1>Welcome to the Toddler Transducer</h1>
+<div>
+    <h1>Welcome to the Toddler Transducer</h1>
+    <div class="row">
+        <div class="col-4" style="text-align: center;">
+            <h2>Play Track</h2>
+            <form action="/play_track" method="post">
 
-<form action="/submit" method="post">
-    <select name=AudioTrack method="GET" action="/">
-        {% for track in playable_tracks %}
-        <option value= "{{track}}" SELECTED>{{track}}</option>"
-        {% endfor %}
-    </select>
+                <input list="audio_track_options" name="AudioTrackName" id="AudioTrackName" placeholder="Type to search...">
+                <datalist id="audio_track_options">
+                    {% for track in playable_tracks %}
+                        <option value= "{{track}}" SELECTED>{{track}}</option>"
+                    {% endfor %}
+                </datalist>
 
-    <div class="dropdown m-4">
-        <button class="btn btn-secondary
-                       dropdown-toggle"
-                type="button"
-                id="dropdownMenuButton1"
-                data-bs-toggle="dropdown"
-                aria-expanded="false">
-            Dropdown button
-        </button>
-        <ul class="dropdown-menu pt-0"
-            aria-labelledby="dropdownMenuButton1">
-            <input type="text"
-                   class="form-control
-                          border-0 border-bottom
-                          shadow-none mb-2"
-                   placeholder="Search..."
-{% autoescape false %}
-                   oninput='handleInput({{ playable_tracks_list }})'>
-{% endautoescape %}
-        </ul>
+                <input type="submit" name="PlayTrack" value="Play">
+            </form>
+        </div>
+        <div class="col-4" style="text-align: center;">
+            <h2>Upload New Track</h2>
+            <form action="/upload_track" method="post">
+                <input type="submit" name="UpdatePuckID" value="Update Puck ID"><br>
+            </form>
+            <form action="/upload_track" method="post" enctype = "multipart/form-data">
+                <label for="TrackName" class="form-label">Track Name</label>
+                <input type="text" class="form-control" id="TrackName" placeholder="IllMakeAManOutOfYou" name="TrackName"><br>
+
+                <label for="TrackFile">File to upload:</label>
+                <input type="file" id="TrackFile" name="TrackFile">
+
+                <input type="submit" name="UploadFile" value="Upload">
+            </form>
+        </div>
     </div>
-
-    <input type="submit" name="PlayTrack" value="submit">
-</form>
-<script src="{{url_for('static', filename='searchable_list.js')}}"></script>
-{% autoescape false %}
-<script>handleInput({{ playable_tracks_list }})</script>
-{% endautoescape %}
+</div>
 </body>
 </html>
