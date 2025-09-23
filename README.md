@@ -11,6 +11,7 @@ Project for playing audio from a speaker using physical pucks
   - [ ] Build Pipeline
 - [ ] Playback without puck
 - [ ] Codeless adding of new files
+- [ ] Type hints
 
 ## Music Playback loop
 
@@ -26,11 +27,12 @@ If the tag has changed id then change song
 Todo List
 
 1. Add feedback on;
-   * Current song
-   * Time through it
-   * Time left
+   * Current song ` ,.VLC_MEDIA_PLAYER.get_media().get_mrl()`
+   * Time through it `VLC_MEDIA_PLAYER.get_time()`
+   * Time left  `VLC_MEDIA_PLAYER.get_length(), VLC_MEDIA_PLAYER.get_position()`
    * If its repeating
 1. Add ability to repeat song
+2. Error check the song name input so it can only be a song that exists.
 
 ## OTA Update
 

@@ -6,6 +6,7 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
           rel="stylesheet">
+    <link href="{{ url_for('static', filename='player.css') }}" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 <body>
@@ -13,18 +14,58 @@
     <h1>Welcome to the Toddler Transducer</h1>
     <div class="row">
         <div class="col-4" style="text-align: center;">
-            <h2>Play Track</h2>
-            <form action="/play_track" method="post">
+<!--            <div class="row">-->
+<!--                <h2>Play Track</h2>-->
+<!--                <form action="/play_track" method="post">-->
 
-                <input list="audio_track_options" name="AudioTrackName" id="AudioTrackName" placeholder="Type to search...">
-                <datalist id="audio_track_options">
-                    {% for track in playable_tracks %}
-                        <option value= "{{track}}" SELECTED>{{track}}</option>"
-                    {% endfor %}
-                </datalist>
+<!--                    <input list="audio_track_options" name="AudioTrackName" id="AudioTrackName" placeholder="Type to search...">-->
+<!--                    <datalist id="audio_track_options">-->
+<!--                        {% for track in playable_tracks %}-->
+<!--                            <option value= "{{track}}" SELECTED>{{track}}</option>"-->
+<!--                        {% endfor %}-->
+<!--                    </datalist>-->
 
-                <input type="submit" name="PlayTrack" value="Play">
-            </form>
+<!--                    <input type="submit" name="PlayTrack" value="Play">-->
+<!--                </form>-->
+<!--            </div>-->
+            <div class="row">
+                <div class="player">
+                    <div class="player-track-meta">
+                        <p>{{track_name}}</p>
+                    </div>
+                    <div class="player-controls">
+                        <form action="/play_track" method="post">
+                            <input list="audio_track_options" name="AudioTrackName" id="AudioTrackName" placeholder="Type to search...">
+                            <datalist id="audio_track_options">
+                                {% for track in playable_tracks %}
+                                    <option value= "{{track}}" SELECTED>{{track}}</option>"
+                                {% endfor %}
+                            </datalist>
+                            <button type="submit" class="GFG">
+                                <div class="player-icon-play">
+                                    <svg xmlns="https://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><title>play</title>
+                                        {{play_status_icon|safe}}
+                                        <rect class="icon-container" width="24" height="24"/></svg>
+                                </div>
+                            </button>
+                        </form>
+
+                        <button class="player-play-btn" role="button" aria-label="Play" data-playing="false">
+                            <div class="player-icon-pause hidden">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><title>pause</title>
+                                    <g><rect  class="icon-pause" x="6" y="3.26" width="4" height="17.48"/><rect class="icon-pause" x="14" y="3.26" width="4" height="17.48"/></g><rect class="icon-container" width="24" height="24"/></svg>
+                            </div>
+                        </button>
+                        <div class="player-timeline">
+                          <span class="player-time player-time-current">00:00</span>
+                          <div class="player-progress">
+                              <div class="player-progress-filled"></div>
+                          </div>
+                          <span class="player-time player-time-duration">00:00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="col-4" style="text-align: center;">
             <h2>Upload New Track</h2>
