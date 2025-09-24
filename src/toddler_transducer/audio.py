@@ -32,7 +32,6 @@ def load_track(rfid_tag: Optional[str] = None, track_name: Optional[str] = None)
     else:
         raise TypeError('Must provide either rfid_tag or track_name')
     print(audio_path)
-    global VLC_MEDIA_PLAYER
     VLC_MEDIA_LIST_PLAYER.stop()
     media = VLC_MEDIA_INSTANCE.media_new(audio_path)
     media_list = VLC_MEDIA_INSTANCE.media_list_new()
