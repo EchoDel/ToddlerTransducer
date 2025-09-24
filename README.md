@@ -9,8 +9,8 @@ Project for playing audio from a speaker using physical pucks
 - [ ] Basic Software
 - [ ] OTA Update
   - [ ] Build Pipeline
-- [ ] Playback without puck
-- [ ] Codeless adding of new files
+- [x] Playback without puck
+- [x] Codeless adding of new files
 - [ ] Type hints
 
 ## Music Playback loop
@@ -52,3 +52,10 @@ Flask App
 https://www.geeksforgeeks.org/python/how-to-add-authentication-to-your-app-with-flask-login/
 https://www.raspberrypi.com/documentation/computers/configuration.html#enable-hotspot
 https://askubuntu.com/questions/155791/how-do-i-sudo-a-command-in-a-script-without-being-asked-for-a-password/155827#155827
+
+
+## Download a copy of the configs
+
+https://stackoverflow.com/questions/24577349/flask-download-a-file
+
+VLC Python docs, https://www.olivieraubert.net/vlc/python-ctypes/doc/
