@@ -27,7 +27,7 @@
                                         <option value= "{{track}}" SELECTED>{{track}}</option>"
                                     {% endfor %}
                                 </datalist>
-                                <button type="submit" class="GFG">
+                                <button type="submit" class="GFG" name={{play_status}}>
                                     <div class="player-icon-play">
                                         <svg xmlns="https://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><title>play</title>
                                             {{play_status_icon|safe}}
@@ -35,12 +35,22 @@
                                     </div>
                                 </button>
                             </form>
+                            <form action="/loop_track" method="post">
+                                <button type="submit" class="GFG" name="">
+                                    <div class="player-icon-play">
+                                        <svg xmlns="https://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><title>repeat</title>
+                                            <polygon class="icon-play" points="10 7 16 2 16 12" fill="black"/>
+                                            <path d="M 8 7 C -7 24, 34 24, 16 7" stroke="black" fill="transparent" />
+                                            <rect class="{{loop_icon_class}}" width="24" height="24" fill="white"/></svg>
+                                    </div>
+                                </button>
+                            </form>
                             <div class="player-timeline">
-                              <span class="player-time player-time-current">00:00</span>
+                              <span class="player-time player-time-current">{{play_current_time}}</span>
                               <div class="player-progress">
                                   <div class="player-progress-filled"></div>
                               </div>
-                              <span class="player-time player-time-duration">00:00</span>
+                              <span class="player-time player-time-duration">{{play_track_length}}</span>
                             </div>
                         </div>
                     </div>
