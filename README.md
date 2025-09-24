@@ -59,3 +59,4 @@ https://askubuntu.com/questions/155791/how-do-i-sudo-a-command-in-a-script-witho
 https://stackoverflow.com/questions/24577349/flask-download-a-file
 
 VLC Python docs, https://www.olivieraubert.net/vlc/python-ctypes/doc/
+Loop VLC, https://stackoverflow.com/questions/7214843/repeating-single-movie-using-python-bindings-for-vlc-what-is-a-psz-name
