@@ -1,0 +1,10 @@
+[Unit]
+Description=Your application service
+
+[Service]
+Type=simple
+ExecStart=./launch_toddler_transducer.sh
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
