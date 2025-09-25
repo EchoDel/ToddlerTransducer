@@ -6,7 +6,7 @@ authors = [
     {name = "Edward Parry",email = "red_parry@yahoo.co.uk"}
 ]
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 dependencies = [
     "fake_rpi (>=0.7.1) ; sys_platform == 'win32'",
     "mfrc522-python",
