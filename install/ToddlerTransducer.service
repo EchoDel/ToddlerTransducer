@@ -3,7 +3,7 @@ Description=Your application service
 
 [Service]
 Type=simple
-ExecStart=./launch_toddler_transducer.sh
+ExecStart=/home/pi/ToddlerTransducer/install/launch_toddler_transducer.sh
 Restart=always
 
 [Install]

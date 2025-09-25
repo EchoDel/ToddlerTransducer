@@ -60,3 +60,10 @@ https://stackoverflow.com/questions/24577349/flask-download-a-file
 
 VLC Python docs, https://www.olivieraubert.net/vlc/python-ctypes/doc/
 Loop VLC, https://stackoverflow.com/questions/7214843/repeating-single-movie-using-python-bindings-for-vlc-what-is-a-psz-name
+
+# Install
+
+git clone https://
+cd ToddlerTransducer
+sudo cp ./install/ToddlerTransducer.service /etc/systemd/system/ToddlerTransducer.service
+
