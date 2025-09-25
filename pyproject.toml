@@ -25,6 +25,10 @@ mypy = "^1.18.2"
 pylint = "^3.3.8"
 pytest = "8.4.2"
 
+
+[tool.poetry.group.deployment.dependencies]
+waitress = "^3.0.2"
+
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
