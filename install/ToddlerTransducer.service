@@ -1,5 +1,5 @@
 [Unit]
-Description=Your application service
+Description=Service to play audio via rfid tags or a webpage
 
 [Service]
 Type=simple

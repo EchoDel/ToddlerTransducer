@@ -11,12 +11,12 @@ echo "Repository is outdated. Updating…"
 # git checkout master
 git pull
 # Stop the service
-sudo systemctl stop your_application.service
+sudo systemctl stop ToddlerTransducer.service
 # Build and update the requirements and package
 poetry install
 poetry build
 # Restart the application
-sudo systemctl start your_application.service
+sudo systemctl start ToddlerTransducer.service
 else
 echo "Repository is up to date."
 fi
