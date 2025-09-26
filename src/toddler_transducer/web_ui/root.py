@@ -20,6 +20,7 @@ def home() -> str:
     playable_tracks = get_current_files()
     current_track_metadata = get_playing_track()
     track_names = list(playable_tracks.keys())
+    current_puck_id = get_rfid_id()
 
     if current_track_metadata is None:
         track_name = 'Load Track'
@@ -50,7 +51,8 @@ def home() -> str:
                                  play_status_icon=play_status_icon,
                                  play_track_length=track_length,
                                  play_current_time=track_time,
-                                 loop_icon_class=loop_icon_class)
+                                 loop_icon_class=loop_icon_class,
+                                 current_puck_id=current_puck_id)
     return html_files
 
 @flask_app.route('/play_track', methods=['POST'])
