@@ -63,7 +63,8 @@ Loop VLC, https://stackoverflow.com/questions/7214843/repeating-single-movie-usi
 
 # Install
 
-git clone https://
-cd ToddlerTransducer
-sudo cp ./install/ToddlerTransducer.service /etc/systemd/system/ToddlerTransducer.service
-
+1. git clone https://github.com/EchoDel/ToddlerTransducer.git
+1. cd ToddlerTransducer
+1. sudo cp ./install/ToddlerTransducer.service /etc/systemd/system/ToddlerTransducer.service
+1. `crontab -e`
+   * Add the following;  */5 * * * * /home/pi/ToddlerTransducer/install/ota_update.sh
