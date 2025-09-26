@@ -1,6 +1,6 @@
 #!/bin/bash
 # Check for updates
-cd ../
+cd /home/pi/ToddlerTransducer/
 git fetch
 LOCAL=$(git rev-parse HEAD)
 REMOTE=$(git rev-parse @{u})
