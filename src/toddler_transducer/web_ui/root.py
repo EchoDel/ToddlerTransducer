@@ -22,7 +22,7 @@ def home() -> str:
     track_names = list(playable_tracks.keys())
 
     if current_track_metadata is None:
-        track_name = 'Track Name'
+        track_name = 'Load Track'
     else:
         track_name = current_track_metadata['track_name']
 
