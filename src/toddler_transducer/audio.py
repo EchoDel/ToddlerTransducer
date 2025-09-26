@@ -18,7 +18,7 @@ from .metadata import load_metadata, TrackMetadata
 # Starting the vlc instance
 # VLC_MEDIA_PLAYER= vlc.MediaPlayer()
 
-VLC_MEDIA_INSTANCE = vlc.Instance()
+VLC_MEDIA_INSTANCE = vlc.Instance("--aout=alsa")
 VLC_MEDIA_LIST_PLAYER = VLC_MEDIA_INSTANCE.media_list_player_new()
 
 LOOPING = False
@@ -38,6 +38,7 @@ def load_track(rfid_tag: Optional[str] = None, track_name: Optional[str] = None)
     media_list.add_media(media)
     VLC_MEDIA_LIST_PLAYER.set_media_list(media_list)
     VLC_MEDIA_LIST_PLAYER.play()
+    VLC_MEDIA_LIST_PLAYER.audio_set_volume(80)
     if LOOPING:
         VLC_MEDIA_LIST_PLAYER.set_playback_mode(int(LOOPING))
 

@@ -7,8 +7,8 @@ Project for playing audio from a speaker using physical pucks
 - [x] Wiring Diagram
 - [ ] Finalise enclosure
 - [ ] Basic Software
-- [ ] OTA Update
-  - [ ] Build Pipeline
+- [x] OTA Update
+  - [x] Build Pipeline
 - [x] Playback without puck
 - [x] Codeless adding of new files
 - [ ] Type hints
