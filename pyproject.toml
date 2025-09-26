@@ -11,7 +11,9 @@ dependencies = [
     "fake_rpi (>=0.7.1) ; sys_platform == 'win32'",
     "mfrc522-python",
     "python-vlc",
-    "flask"
+    "flask",
+    "RPi.GPIO",
+    "spidev"
 ]
 
 [tool.poetry]
