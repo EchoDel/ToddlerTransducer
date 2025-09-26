@@ -13,7 +13,7 @@ import vlc
 from pathlib import Path
 
 from .config import AUDIO_FILE_BASE_PATH
-from .metadata import load_metadata
+from .metadata import load_metadata, TrackMetadata
 
 # Starting the vlc instance
 # VLC_MEDIA_PLAYER= vlc.MediaPlayer()
@@ -38,27 +38,50 @@ def load_track(rfid_tag: Optional[str] = None, track_name: Optional[str] = None)
     media_list.add_media(media)
     VLC_MEDIA_LIST_PLAYER.set_media_list(media_list)
     VLC_MEDIA_LIST_PLAYER.play()
+    if LOOPING:
+        VLC_MEDIA_LIST_PLAYER.set_playback_mode(int(LOOPING))
 
 
 def play_vlc():
+    """
+    Calls the VLC service to play audio.
+    """
     VLC_MEDIA_LIST_PLAYER.play()
 
 
 def pause_vlc():
+    """
+    Calls the VLC service to pause audio.
+    """
     VLC_MEDIA_LIST_PLAYER.pause()
 
 
 def toggle_loop_vlc():
+    """
+    Calls the VLC service to loop the current audio.
+    """
     global LOOPING
     VLC_MEDIA_LIST_PLAYER.set_playback_mode(int(not LOOPING))
     LOOPING = not LOOPING
 
 
-def get_looping():
+def get_looping() -> bool:
+    """
+    Returns whether the VLC service is currently looping.
+
+    Returns:
+        (bool): True if looping, False if not.
+    """
     return LOOPING
 
 
-def get_playing_track():
+def get_playing_track() -> TrackMetadata:
+    """
+    Returns the metadata of the playing track.
+
+    Returns:
+        (TrackMetadata): The metadata of the playing track.
+    """
     media = VLC_MEDIA_LIST_PLAYER.get_media_player().get_media()
     if media is None:
         return None
@@ -68,19 +91,46 @@ def get_playing_track():
     return metadata[uuid]
 
 
-def is_playing():
+def is_playing() -> bool:
+    """
+    Returns whether the VLC service is currently playing audio.
+
+    Returns:
+        (bool): True if playing, False if not.
+    """
     return VLC_MEDIA_LIST_PLAYER.get_media_player().is_playing() == 1
 
 
-def seconds_to_mmss(seconds):
+def seconds_to_mmss(seconds: float) -> str:
+    """
+    Converts seconds to pretty print %M:%S.
+
+    Args:
+        seconds (float): seconds to convert.
+
+    Returns:
+        (str): The time converted to %M:%S
+    """
     return time.strftime('%M:%S', time.gmtime(seconds))
 
 
-def get_track_length():
+def get_track_length() -> str:
+    """
+    Returns the length of the audio track in the format %M:%S.
+
+    Returns:
+        (str): The length of the audio track in the format %M:%S.
+    """
     track_length = seconds_to_mmss(VLC_MEDIA_LIST_PLAYER.get_media_player().get_length() / 1000)
     return track_length
 
 
-def get_track_time():
+def get_track_time() -> str:
+    """
+    Returns the time the current track has been playing in the format %M:%S.
+
+    Returns:
+        (str): The time through the audio track in the format %M:%S.
+    """
     play_time = seconds_to_mmss(VLC_MEDIA_LIST_PLAYER.get_media_player().get_time() / 1000)
     return play_time

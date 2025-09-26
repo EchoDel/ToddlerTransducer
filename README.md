@@ -60,3 +60,16 @@ https://stackoverflow.com/questions/24577349/flask-download-a-file
 
 VLC Python docs, https://www.olivieraubert.net/vlc/python-ctypes/doc/
 Loop VLC, https://stackoverflow.com/questions/7214843/repeating-single-movie-using-python-bindings-for-vlc-what-is-a-psz-name
+
+# Install
+
+1. clone the git repo,
+   * git clone https://github.com/EchoDel/ToddlerTransducer.git
+1. Change to that folder
+   * cd ToddlerTransducer
+1. Copy the service 
+   * sudo cp ./install/ToddlerTransducer.service /etc/systemd/system/ToddlerTransducer.service
+1. Launch the service
+   * sudo systemctl start ToddlerTransducer.service
+1. `crontab -e`
+   * Add the following;  */5 * * * * /home/pi/ToddlerTransducer/install/ota_update.sh

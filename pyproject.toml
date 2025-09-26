@@ -6,7 +6,7 @@ authors = [
     {name = "Edward Parry",email = "red_parry@yahoo.co.uk"}
 ]
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 dependencies = [
     "fake_rpi (>=0.7.1) ; sys_platform == 'win32'",
     "mfrc522-python",
@@ -25,9 +25,14 @@ mypy = "^1.18.2"
 pylint = "^3.3.8"
 pytest = "8.4.2"
 
+
+[tool.poetry.group.deployment.dependencies]
+waitress = "^3.0.2"
+
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 launch_toddler_transducer = "toddler_transducer.web_ui.launch:launch_toddler_transducer"
+launch_dev_toddler_transducer = "toddler_transducer.web_ui.launch:launch_dev_toddler_transducer"

@@ -1,9 +1,20 @@
 import json
+from typing import TypedDict
 
 from toddler_transducer.config import METADATA_FILE_PATH
 
 
-def load_metadata():
+class TrackMetadata(TypedDict):
+    file_name: str
+    rfid_id: int
+    track_name: str
+
+
+class Metadata(TypedDict):
+    metadata: TrackMetadata
+
+
+def load_metadata() -> Metadata:
     if METADATA_FILE_PATH.exists():
         with open(METADATA_FILE_PATH) as f:
             metadata = json.load(f)

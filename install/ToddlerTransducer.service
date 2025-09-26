@@ -1,0 +1,10 @@
+[Unit]
+Description=Service to play audio via rfid tags or a webpage
+
+[Service]
+Type=simple
+ExecStart=/home/pi/ToddlerTransducer/install/launch_toddler_transducer.sh
+Restart=always
+
+[Install]
+WantedBy=graphical.target
