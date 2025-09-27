@@ -6,6 +6,7 @@ Contains all the code to load, play, stop the audio to play
 This uses the py vlc interface, api reference, https://www.olivieraubert.net/vlc/python-ctypes/doc/.
 
 """
+import logging
 import time
 from typing import Optional
 
@@ -24,9 +25,14 @@ VLC_MEDIA_LIST_PLAYER = VLC_MEDIA_INSTANCE.media_list_player_new()
 LOOPING = False
 
 
-def load_track(rfid_tag: Optional[str] = None, track_name: Optional[str] = None):
+def load_track(rfid_tag: Optional[int] = None, track_name: Optional[str] = None):
     if rfid_tag is not None:
-        audio_path: Path = ''
+        metadata = load_metadata()
+        track_to_play = [value for key, value in metadata.items() if value['rfid_id'] == id]
+        if len(track_to_play) > 0:
+            audio_path: Path = track_to_play['file_name']
+        else:
+            logging.warning(f"No track found for {rfid_tag}")
     elif track_name is not None:
         audio_path: Path = AUDIO_FILE_BASE_PATH / track_name
     else:

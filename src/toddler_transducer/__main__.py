@@ -6,16 +6,12 @@ from toddler_transducer.rfid import get_rfid_id
 def main():
     current_tag_id = None
     while True:
-        id = get_rfid_id()
-        if id == current_tag_id:
+        rfid_tag = get_rfid_id()
+        if rfid_tag == current_tag_id:
             continue
 
-        if id is not None:
-            metadata = load_metadata()
-            track_to_play = [value for key, value in metadata.items() if value['rfid_id'] == id]
-            current_tag_id = id
-            if len(track_to_play) > 0:
-                load_track(track_to_play[0]['file_name'])
+        if rfid_tag is not None:
+            load_track(rfid_tag=rfid_tag)
         else:
             if is_playing():
                 stop_vlc()
