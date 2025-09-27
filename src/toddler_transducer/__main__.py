@@ -12,7 +12,7 @@ def main():
 
         if id is not None:
             metadata = load_metadata()
-            track_to_play = [x for x in metadata.items() if x['rfid_id'] == id]
+            track_to_play = [value for key, value in metadata.items() if value['rfid_id'] == id]
             current_tag_id = id
             if len(track_to_play) > 0:
                 load_track(track_to_play['file_name'])
