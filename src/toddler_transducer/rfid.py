@@ -7,6 +7,13 @@ from mfrc522 import MFRC522
 
 CURRENT_ID = None
 
+
+def uid_to_num(uid):
+    n = 0
+    for i in range(0, 5):
+        n = n * 256 + uid[i]
+    return n
+
 def get_rfid_id() -> int:
     """
     Gets the current RFID ID sector from the reader
@@ -15,9 +22,18 @@ def get_rfid_id() -> int:
         (int): The ID of the RFID tag
     """
     reader = MFRC522()
-    id = reader.read_id_no_block()
+    (status, TagType) = reader.MFRC522_Request(reader.PICC_REQIDL)
+    if status != reader.MI_OK:
+        reader.Close_MFRC522()
+        return None
+    (status, uid) = reader.MFRC522_Anticoll()
+    if status != reader.MI_OK:
+        reader.Close_MFRC522()
+        return None
+
     reader.Close_MFRC522()
-    return id
+    return uid_to_num(uid)
+
 
 
 def get_and_log_rfid_id() -> int:
