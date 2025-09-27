@@ -3,9 +3,8 @@ RFID
 
 Module containing the code for the reading the RFID tag with the MFRC522 board
 """
-from mfrc522 import SimpleMFRC522
+from mfrc522 import MFRC522
 
-reader = SimpleMFRC522()
 CURRENT_ID = None
 
 def get_rfid_id() -> int:
@@ -15,7 +14,9 @@ def get_rfid_id() -> int:
     Returns:
         (int): The ID of the RFID tag
     """
+    reader = MFRC522()
     id = reader.read_id_no_block()
+    reader.Close_MFRC522()
     return id
 
 
