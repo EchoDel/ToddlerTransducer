@@ -57,6 +57,13 @@ def pause_vlc():
     VLC_MEDIA_LIST_PLAYER.pause()
 
 
+def stop_vlc():
+    """
+    Calls the VLC service to stop audio.
+    """
+    VLC_MEDIA_LIST_PLAYER.stop()
+
+
 def toggle_loop_vlc():
     """
     Calls the VLC service to loop the current audio.

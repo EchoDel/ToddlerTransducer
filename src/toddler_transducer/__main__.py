@@ -1,13 +1,21 @@
+from toddler_transducer.audio import load_track, is_playing, stop_vlc
+from toddler_transducer.metadata import load_metadata
+from toddler_transducer.rfid import get_rfid_id
 
 
-# Each loop
-# Check if tag is present
-# If there is no change then continue
-# If there wasn't before and is now load new song and start playing
-# If there was before and isn't now, fade out
-# If the tag has changed id then change song
+def main():
+    current_tag_id = None
+    while True:
+        id = get_rfid_id()
+        if id == current_tag_id:
+            continue
 
-# Add button for looping song else play it once
-# Add hardware button for uploading new music which enables a flask server
-# Secure flask server and add overriding of the songs
-
+        if id is not None:
+            metadata = load_metadata()
+            track_to_play = [x for x in metadata.items() if x['rfid_id'] == id]
+            current_tag_id = id
+            if len(track_to_play) > 0:
+                load_track(track_to_play['file_name'])
+        else:
+            if is_playing():
+                stop_vlc()
