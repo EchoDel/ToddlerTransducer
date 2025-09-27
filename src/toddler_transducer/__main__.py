@@ -22,5 +22,5 @@ def main():
                 current_tag_id = rfid_tag
                 puck_remove_count = 0
         elif rfid_tag != current_tag_id:
-            puck_remove_count == 0
+            puck_remove_count = 0
         time.sleep(2)
