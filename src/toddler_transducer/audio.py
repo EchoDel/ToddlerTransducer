@@ -38,7 +38,7 @@ def load_track(rfid_tag: Optional[str] = None, track_name: Optional[str] = None)
     media_list.add_media(media)
     VLC_MEDIA_LIST_PLAYER.set_media_list(media_list)
     VLC_MEDIA_LIST_PLAYER.play()
-    VLC_MEDIA_LIST_PLAYER.audio_set_volume(80)
+    VLC_MEDIA_LIST_PLAYER.get_media_player().audio_set_volume(100)
     if LOOPING:
         VLC_MEDIA_LIST_PLAYER.set_playback_mode(int(LOOPING))
 
