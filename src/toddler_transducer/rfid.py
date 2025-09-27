@@ -18,7 +18,7 @@ def get_rfid_id() -> int:
     id = reader.read_id_no_block()
     return id
 
-]
+
 def get_and_log_rfid_id() -> int:
     """
     Gets the current RFID ID sector from the reader and logs it to be used later
@@ -30,6 +30,7 @@ def get_and_log_rfid_id() -> int:
     id = get_rfid_id()
     CURRENT_ID = id
     return id
+
 
 def get_logged_rfid_id() -> int:
     """
