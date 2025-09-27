@@ -9,7 +9,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "fake_rpi (>=0.7.1) ; sys_platform == 'win32'",
-    "mfrc522-python",
+    "mfrc522",
     "python-vlc",
     "flask",
     "RPi.GPIO",

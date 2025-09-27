@@ -313,16 +313,21 @@ files = [
 ]
 
 [[package]]
-name = "mfrc522-python"
+name = "mfrc522"
 version = "0.0.7"
-description = "The mfrc522-python library is used to interact with RFID readers that use the MFRC522 chip interfaced with a Raspberry Pi."
+description = "A library to integrate the MFRC522 RFID readers with the Raspberry Pi"
 optional = false
-python-versions = ">=3.7"
+python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "mfrc522-python-0.0.7.tar.gz", hash = "sha256:293758c4f6344a6c0f72fb0dbda72e3a003eeb8810cedefce97d26826ab20904"},
-    {file = "mfrc522_python-0.0.7-py3-none-any.whl", hash = "sha256:027d92127daf88cbf7ad4b3cd994b1d5e0e77f764e0c91c20154fc1d2f6aa413"},
+    {file = "mfrc522-0.0.7-py2-none-any.whl", hash = "sha256:5f0e06d2ca4550d545478b20edb6661d5da943e75b3d4542ba9eb9eef4e541e7"},
+    {file = "mfrc522-0.0.7-py3-none-any.whl", hash = "sha256:874fd0385a7e40190063b60af83d615534b1f764c6b776fed1fcc94551c1e62f"},
+    {file = "mfrc522-0.0.7.tar.gz", hash = "sha256:74c7020a4fc4870f5d7022542c36143fba771055a2fae2e5929e6a1159d2bf00"},
 ]
+
+[package.dependencies]
+"RPi.GPIO" = "*"
+spidev = "*"
 
 [[package]]
 name = "mypy"
@@ -743,4 +748,4 @@ watchdog = ["watchdog (>=2.3)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11"
-content-hash = "1dac095f7d8d1b1e7f7588e3b10d4c99b8d7b33379b73f51c0aeb1d0d0591a4c"
+content-hash = "edfbc016bbd50acba52c6f113e45f9eb73d3c7ccee91b2a3e4aee89712c6a66b"
