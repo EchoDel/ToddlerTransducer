@@ -33,6 +33,7 @@ def load_track(rfid_tag: Optional[int] = None, track_name: Optional[str] = None)
             audio_path: Path = track_to_play['file_name']
         else:
             logging.warning(f"No track found for {rfid_tag}")
+            return
     elif track_name is not None:
         audio_path: Path = AUDIO_FILE_BASE_PATH / track_name
     else:
