@@ -9,10 +9,10 @@ from .app import flask_app
 from .html_templates import PLAY_BUTTON, PAUSE_BUTTON
 from ..audio_file_manager import get_current_files
 from ..audio import load_track, get_playing_track, is_playing, get_track_length, get_track_time, pause_vlc, play_vlc, \
-    toggle_loop_vlc, LOOPING, get_looping
+    toggle_loop_vlc, get_looping
 from ..config import AUDIO_FILE_BASE_PATH
 from ..metadata import load_metadata, save_metadata
-from ..rfid import get_rfid_id
+from ..rfid import get_logged_rfid_id, get_and_log_rfid_id
 
 
 @flask_app.route('/')
@@ -20,7 +20,7 @@ def home() -> str:
     playable_tracks = get_current_files()
     current_track_metadata = get_playing_track()
     track_names = list(playable_tracks.keys())
-    current_puck_id = get_rfid_id()
+    current_puck_id = get_and_log_rfid_id()
 
     if current_track_metadata is None:
         track_name = 'Load Track'
@@ -82,7 +82,7 @@ def upload_track():
 
         metadata = load_metadata()
         metadata[file_stem] = {'file_name': str(file_name),
-                               'rfid_id': get_rfid_id(),
+                               'rfid_id': get_logged_rfid_id(),
                                'track_name': request.form['TrackName']}
 
         save_metadata(metadata)
