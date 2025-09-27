@@ -3,16 +3,10 @@ RFID
 
 Module containing the code for the reading the RFID tag with the MFRC522 board
 """
-from mfrc522 import MFRC522
+from mfrc522 import SimpleMFRC522
 
+reader = SimpleMFRC522()
 CURRENT_ID = None
-
-
-def uid_to_num(uid):
-    n = 0
-    for i in range(0, 5):
-        n = n * 256 + uid[i]
-    return n
 
 def get_rfid_id() -> int:
     """
@@ -21,19 +15,8 @@ def get_rfid_id() -> int:
     Returns:
         (int): The ID of the RFID tag
     """
-    reader = MFRC522()
-    (status, TagType) = reader.MFRC522_Request(reader.PICC_REQIDL)
-    if status != reader.MI_OK:
-        reader.Close_MFRC522()
-        return None
-    (status, uid) = reader.MFRC522_Anticoll()
-    if status != reader.MI_OK:
-        reader.Close_MFRC522()
-        return None
-
-    reader.Close_MFRC522()
-    return uid_to_num(uid)
-
+    id = reader.read_id_no_block()
+    return id
 
 
 def get_and_log_rfid_id() -> int:
