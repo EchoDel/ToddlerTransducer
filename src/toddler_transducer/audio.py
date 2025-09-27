@@ -30,7 +30,7 @@ def load_track(rfid_tag: Optional[int] = None, track_name: Optional[str] = None)
         metadata = load_metadata()
         track_to_play = [value for key, value in metadata.items() if value['rfid_id'] == rfid_tag]
         if len(track_to_play) > 0:
-            audio_path: Path = track_to_play[0]['file_name']
+            audio_path: Path = AUDIO_FILE_BASE_PATH / track_to_play[0]['file_name']
         else:
             logging.warning(f"No track found for {rfid_tag}")
             return
