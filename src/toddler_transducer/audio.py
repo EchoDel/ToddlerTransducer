@@ -6,6 +6,7 @@ Contains all the code to load, play, stop the audio to play
 This uses the py vlc interface, api reference, https://www.olivieraubert.net/vlc/python-ctypes/doc/.
 
 """
+import logging
 import time
 from typing import Optional
 
@@ -24,9 +25,15 @@ VLC_MEDIA_LIST_PLAYER = VLC_MEDIA_INSTANCE.media_list_player_new()
 LOOPING = False
 
 
-def load_track(rfid_tag: Optional[str] = None, track_name: Optional[str] = None):
+def load_track(rfid_tag: Optional[int] = None, track_name: Optional[str] = None):
     if rfid_tag is not None:
-        audio_path: Path = ''
+        metadata = load_metadata()
+        track_to_play = [value for key, value in metadata.items() if value['rfid_id'] == rfid_tag]
+        if len(track_to_play) > 0:
+            audio_path: Path = AUDIO_FILE_BASE_PATH / track_to_play[0]['file_name']
+        else:
+            logging.warning(f"No track found for {rfid_tag}")
+            return
     elif track_name is not None:
         audio_path: Path = AUDIO_FILE_BASE_PATH / track_name
     else:
@@ -38,7 +45,7 @@ def load_track(rfid_tag: Optional[str] = None, track_name: Optional[str] = None)
     media_list.add_media(media)
     VLC_MEDIA_LIST_PLAYER.set_media_list(media_list)
     VLC_MEDIA_LIST_PLAYER.play()
-    VLC_MEDIA_LIST_PLAYER.audio_set_volume(80)
+    VLC_MEDIA_LIST_PLAYER.get_media_player().audio_set_volume(100)
     if LOOPING:
         VLC_MEDIA_LIST_PLAYER.set_playback_mode(int(LOOPING))
 
@@ -55,6 +62,13 @@ def pause_vlc():
     Calls the VLC service to pause audio.
     """
     VLC_MEDIA_LIST_PLAYER.pause()
+
+
+def stop_vlc():
+    """
+    Calls the VLC service to stop audio.
+    """
+    VLC_MEDIA_LIST_PLAYER.stop()
 
 
 def toggle_loop_vlc():
