@@ -1,5 +1,5 @@
 import signal
-import sys
+import time
 from multiprocessing import Process, Manager
 
 import RPi.GPIO
@@ -23,3 +23,5 @@ def main():
     # Start the
     puck_playback_process = Process(target=puck_playback_loop, args=(rfid_tag_proxy,))
     puck_playback_process.start()
+    while True:
+        time.sleep(100000)

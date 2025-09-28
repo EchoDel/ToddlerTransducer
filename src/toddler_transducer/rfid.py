@@ -3,6 +3,7 @@ RFID
 
 Module containing the code for the reading the RFID tag with the MFRC522 board
 """
+import time
 from multiprocessing.managers import ValueProxy
 
 from mfrc522 import SimpleMFRC522
@@ -47,5 +48,7 @@ def get_logged_rfid_id() -> int | None:
 
 
 def threaded_get_rfid_id(rfid_tag_proxy: ValueProxy):
-    rfid_id = get_rfid_id()
-    rfid_tag_proxy.value = rfid_id
+    while True:
+        rfid_id = get_rfid_id()
+        rfid_tag_proxy.value = rfid_id
+        time.sleep(2)
