@@ -24,29 +24,6 @@ def get_rfid_id() -> int | None:
     return id
 
 
-def get_and_log_rfid_id() -> int | None:
-    """
-    Gets the current RFID ID sector from the reader and logs it to be used later
-
-    Returns:
-        (int): The ID of the RFID tag
-    """
-    global CURRENT_ID
-    id = get_rfid_id()
-    CURRENT_ID = id
-    return id
-
-
-def get_logged_rfid_id() -> int | None:
-    """
-    Gets the logged rfid id
-
-    Returns:
-        (int): The ID of the RFID tag
-    """
-    return CURRENT_ID
-
-
 def threaded_get_rfid_id(rfid_tag_proxy: ValueProxy):
     while True:
         rfid_id = get_rfid_id()

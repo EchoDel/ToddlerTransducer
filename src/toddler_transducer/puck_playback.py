@@ -10,7 +10,7 @@ def puck_playback_loop(rfid_tag_proxy: ValueProxy):
     while True:
         rfid_tag = rfid_tag_proxy.value
         if rfid_tag is None:
-            if puck_remove_count > 3:
+            if puck_remove_count >= 1:
                 if is_playing():
                     stop_vlc()
                     current_tag_id = rfid_tag

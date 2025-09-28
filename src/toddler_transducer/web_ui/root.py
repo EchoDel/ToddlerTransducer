@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from uuid import uuid1
 
-from flask import render_template, request, redirect
+from flask import render_template, request, redirect, session
 from werkzeug.utils import secure_filename
 
 from .app import flask_app
@@ -12,7 +12,7 @@ from ..audio import load_track, get_playing_track, is_playing, get_track_length,
     toggle_loop_vlc, get_looping
 from ..config import AUDIO_FILE_BASE_PATH
 from ..metadata import load_metadata, save_metadata
-from ..rfid import get_logged_rfid_id, get_and_log_rfid_id
+from ..rfid import get_rfid_id
 
 
 @flask_app.route('/')
@@ -20,7 +20,8 @@ def home() -> str:
     playable_tracks = get_current_files()
     current_track_metadata = get_playing_track()
     track_names = list(playable_tracks.keys())
-    current_puck_id = get_and_log_rfid_id()
+    current_puck_id = get_rfid_id()
+    session['current_puck_id'] = current_puck_id
 
     if current_track_metadata is None:
         track_name = 'Load Track'
@@ -72,7 +73,7 @@ def play_track():
 @flask_app.route('/upload_track', methods=['POST'])
 def upload_track():
     # Play the audio track
-    if 'TrackFile' in request.files:
+    if ('TrackFile' in request.files) and ('current_puck_id' in session):
         file = request.files['TrackFile']
         filename = secure_filename(file.filename)
         # Here you should save the file
@@ -82,7 +83,7 @@ def upload_track():
 
         metadata = load_metadata()
         metadata[file_stem] = {'file_name': str(file_name),
-                               'rfid_id': get_logged_rfid_id(),
+                               'rfid_id': session['current_puck_id'] ,
                                'track_name': request.form['TrackName']}
 
         save_metadata(metadata)

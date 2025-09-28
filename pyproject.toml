@@ -36,5 +36,6 @@ requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-launch_toddler_transducer = "toddler_transducer.web_ui.launch:launch_toddler_transducer"
-launch_dev_toddler_transducer = "toddler_transducer.web_ui.launch:launch_dev_toddler_transducer"
+launch_toddler_transducer_web_app = "toddler_transducer.web_ui.launch:launch_toddler_transducer_web_app"
+launch_dev_toddler_transducer_web_app = "toddler_transducer.web_ui.launch:launch_dev_toddler_transducer_web_app"
+launch_dev_toddler_transducer = "toddler_transducer.__main__:main"
