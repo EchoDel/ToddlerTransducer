@@ -8,7 +8,7 @@ from mfrc522 import SimpleMFRC522
 reader = SimpleMFRC522()
 CURRENT_ID = None
 
-def get_rfid_id() -> int:
+def get_rfid_id() -> int | None:
     """
     Gets the current RFID ID sector from the reader
 
@@ -16,10 +16,12 @@ def get_rfid_id() -> int:
         (int): The ID of the RFID tag
     """
     id = reader.read_id_no_block()
+    if id is None:
+        id = reader.read_id_no_block()
     return id
 
 
-def get_and_log_rfid_id() -> int:
+def get_and_log_rfid_id() -> int | None:
     """
     Gets the current RFID ID sector from the reader and logs it to be used later
 
@@ -32,7 +34,7 @@ def get_and_log_rfid_id() -> int:
     return id
 
 
-def get_logged_rfid_id() -> int:
+def get_logged_rfid_id() -> int | None:
     """
     Gets the logged rfid id
 
@@ -40,3 +42,8 @@ def get_logged_rfid_id() -> int:
         (int): The ID of the RFID tag
     """
     return CURRENT_ID
+
+
+def threaded_get_rfid_id(rfid_queue):
+    rfid_id = get_rfid_id()
+    rfid_queue.put(rfid_id)
