@@ -15,11 +15,11 @@ def main():
 
     signal.signal(signal.SIGTERM, term_handler)
 
-    rfid_tag_id = Manager().list()  # https://dnmtechs.com/appending-to-list-with-multiprocessing-in-python-3/
+    rfid_tag_proxy = Manager().Value('i', None)  # https://dnmtechs.com/appending-to-list-with-multiprocessing-in-python-3/
     # Start the rfid process
-    rfid_process = Process(target=threaded_get_rfid_id, args=(rfid_tag_id,))
+    rfid_process = Process(target=threaded_get_rfid_id, args=(rfid_tag_proxy,))
     rfid_process.start()
 
     # Start the
-    puck_playback_process = Process(target=puck_playback_loop, args=(rfid_tag_id,))
+    puck_playback_process = Process(target=puck_playback_loop, args=(rfid_tag_proxy,))
     puck_playback_process.start()

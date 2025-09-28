@@ -3,6 +3,8 @@ RFID
 
 Module containing the code for the reading the RFID tag with the MFRC522 board
 """
+from multiprocessing.managers import ValueProxy
+
 from mfrc522 import SimpleMFRC522
 
 reader = SimpleMFRC522()
@@ -44,7 +46,6 @@ def get_logged_rfid_id() -> int | None:
     return CURRENT_ID
 
 
-def threaded_get_rfid_id(rfid_queue: list[int]):
+def threaded_get_rfid_id(rfid_tag_proxy: ValueProxy):
     rfid_id = get_rfid_id()
-    rfid_queue.clear()
-    rfid_queue.append(rfid_id)
+    rfid_tag_proxy = rfid_id
