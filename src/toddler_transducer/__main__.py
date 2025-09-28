@@ -2,7 +2,7 @@ import signal
 import sys
 from multiprocessing import Process, Manager
 
-from RPI import GPIO
+import RPi.GPIO
 
 from toddler_transducer.rfid import threaded_get_rfid_id
 from .puck_playback import puck_playback_loop
@@ -11,7 +11,7 @@ from .puck_playback import puck_playback_loop
 def main():
     def term_handler(signum, frame):
         print("sig term handler")
-        GPIO.cleanup()
+        RPi.GPIO.cleanup()
 
     signal.signal(signal.SIGTERM, term_handler)
 
