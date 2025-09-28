@@ -46,4 +46,4 @@ def get_logged_rfid_id() -> int | None:
 
 def threaded_get_rfid_id(rfid_queue):
     rfid_id = get_rfid_id()
-    rfid_queue.put(rfid_id)
+    rfid_queue.append(rfid_id)
