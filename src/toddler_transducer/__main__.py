@@ -1,5 +1,6 @@
 import signal
 import time
+import sys
 from multiprocessing import Process, Manager
 
 import RPi.GPIO
@@ -13,6 +14,7 @@ def main():
     def term_handler(signum, frame):
         print("sig term handler")
         RPi.GPIO.cleanup()
+        sys.exit(0)
 
     signal.signal(signal.SIGTERM, term_handler)
 
