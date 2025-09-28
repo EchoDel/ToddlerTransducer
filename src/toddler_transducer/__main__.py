@@ -15,7 +15,7 @@ def main():
 
     signal.signal(signal.SIGTERM, term_handler)
 
-    rfid_tag_id = deque([], maxlen=1)
+    rfid_tag_id = []
     # Start the rfid process
     rfid_process = Process(target=threaded_get_rfid_id, args=(rfid_tag_id,))
     rfid_process.start()
