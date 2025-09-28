@@ -23,4 +23,4 @@ def puck_playback_loop(rfid_queue):
                     puck_remove_count = 0
             elif rfid_tag != current_tag_id:
                 puck_remove_count = 0
-            time.sleep(2)
+        time.sleep(2)

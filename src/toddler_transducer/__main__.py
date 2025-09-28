@@ -1,8 +1,8 @@
 import signal
 import sys
-from collections import deque
-from multiprocessing import Process
+from multiprocessing import Process, Manager
 
+from RPI import GPIO
 
 from toddler_transducer.rfid import threaded_get_rfid_id
 from .puck_playback import puck_playback_loop
@@ -11,11 +11,11 @@ from .puck_playback import puck_playback_loop
 def main():
     def term_handler(signum, frame):
         print("sig term handler")
-        sys.exit(0)
+        GPIO.cleanup()
 
     signal.signal(signal.SIGTERM, term_handler)
 
-    rfid_tag_id = []
+    rfid_tag_id = Manager().list()  # https://dnmtechs.com/appending-to-list-with-multiprocessing-in-python-3/
     # Start the rfid process
     rfid_process = Process(target=threaded_get_rfid_id, args=(rfid_tag_id,))
     rfid_process.start()
