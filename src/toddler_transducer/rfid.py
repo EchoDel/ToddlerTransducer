@@ -48,4 +48,4 @@ def get_logged_rfid_id() -> int | None:
 
 def threaded_get_rfid_id(rfid_tag_proxy: ValueProxy):
     rfid_id = get_rfid_id()
-    rfid_tag_proxy = rfid_id
+    rfid_tag_proxy.value = rfid_id
