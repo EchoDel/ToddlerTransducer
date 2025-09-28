@@ -7,7 +7,7 @@ def puck_playback_loop(rfid_queue):
     current_tag_id = None
     puck_remove_count = 0
     while True:
-        if not rfid_queue.empty():
+        if len(rfid_queue) > 0:
             rfid_tag = rfid_queue[0]
             if rfid_tag is None:
                 if puck_remove_count > 3:
