@@ -27,7 +27,7 @@ def main():
 
     signal.signal(signal.SIGTERM, term_handler)
 
-    rfid_tag_proxy = Manager().Value('i', None)  # https://dnmtechs.com/appending-to-list-with-multiprocessing-in-python-3/
+    rfid_tag_proxy = Manager().Value('i', None)
     # Start the rfid process
     rfid_process = Process(target=threaded_get_rfid_id, args=(rfid_tag_proxy,))
     rfid_process.start()

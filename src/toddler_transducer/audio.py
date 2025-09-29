@@ -17,8 +17,6 @@ from .config import AUDIO_FILE_BASE_PATH
 from .metadata import load_metadata, TrackMetadata
 
 # Starting the vlc instance
-# VLC_MEDIA_PLAYER= vlc.MediaPlayer()
-
 VLC_MEDIA_INSTANCE = vlc.Instance("--aout=alsa")
 VLC_MEDIA_LIST_PLAYER = VLC_MEDIA_INSTANCE.media_list_player_new()
 
