@@ -6,13 +6,13 @@ Project for playing audio from a speaker using physical pucks
 
 - [x] Wiring Diagram
 - [ ] Finalise enclosure
-- [ ] Basic Software
+- [x] Basic Software
 - [x] OTA Update
   - [x] Build Pipeline
 - [x] Playback without puck
 - [x] Codeless adding of new files
 - [ ] Type hints
-- [ ] Clean up GPIO after stopping, https://stackoverflow.com/questions/56098431/runtimewarning-this-channel-is-already-in-use
+- [x] Clean up GPIO after stopping
 
 ## Music Playback loop
 

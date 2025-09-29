@@ -1,26 +1,43 @@
+import signal
 import time
+import sys
+from multiprocessing import Process, Manager
 
-from toddler_transducer.audio import load_track, is_playing, stop_vlc
-from toddler_transducer.rfid import get_rfid_id
+import RPi.GPIO
+
+from toddler_transducer.rfid import threaded_get_rfid_id
+from .puck_playback import puck_playback_loop
+from .web_ui.launch import launch_toddler_transducer_web_app
 
 
 def main():
-    current_tag_id = None
-    puck_remove_count = 0
+    def term_handler(signum, frame):
+        """
+        Handles the sigterm event so that the gpio can be cleaned up if its being used.
+        Based on this blog, https://chadrick-kwag.net/posts/python-interrupt-sigterm-sigkill-exception-handling-experiments/
+
+        Args:
+            signum:
+            frame:
+        """
+        print("sig term handler")
+        # https://stackoverflow.com/questions/56098431/runtimewarning-this-channel-is-already-in-use
+        RPi.GPIO.cleanup()
+        sys.exit(0)
+
+    signal.signal(signal.SIGTERM, term_handler)
+
+    rfid_tag_proxy = Manager().Value('i', None)
+    # Start the rfid process
+    rfid_process = Process(target=threaded_get_rfid_id, args=(rfid_tag_proxy,))
+    rfid_process.start()
+
+    # Start the puck playback loop
+    puck_playback_process = Process(target=puck_playback_loop, args=(rfid_tag_proxy,))
+    puck_playback_process.start()
+
+    # Start the flask app
+    puck_playback_process = Process(target=launch_toddler_transducer_web_app, args=(rfid_tag_proxy,))
+    puck_playback_process.start()
     while True:
-        rfid_tag = get_rfid_id()
-        if rfid_tag is None:
-            if puck_remove_count > 3:
-                if is_playing():
-                    stop_vlc()
-                    current_tag_id = rfid_tag
-            else:
-                puck_remove_count += 1
-        elif rfid_tag != current_tag_id:
-            if rfid_tag is not None:
-                load_track(rfid_tag=rfid_tag)
-                current_tag_id = rfid_tag
-                puck_remove_count = 0
-        elif rfid_tag != current_tag_id:
-            puck_remove_count = 0
-        time.sleep(2)
+        time.sleep(100000)  # Main loop has to keep running until all the process finish
