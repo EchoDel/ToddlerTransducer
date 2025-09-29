@@ -11,6 +11,7 @@ from mfrc522 import SimpleMFRC522
 reader = SimpleMFRC522()
 CURRENT_ID = None
 
+
 def get_rfid_id() -> int | None:
     """
     Gets the current RFID ID sector from the reader
