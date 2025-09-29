@@ -13,7 +13,7 @@ dependencies = [
     "python-vlc",
     "flask",
     "RPi.GPIO",
-    "spidev"
+#    "spidev"
 ]
 
 [tool.poetry]

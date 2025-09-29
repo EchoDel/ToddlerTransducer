@@ -1,60 +1,19 @@
-const handleInput = (options) => {
-    const inputValue =
-        document
-            .querySelector('.form-control').value;
-//    const results =
-//        ["apple", "banana", "cherry",
-//            "date", "elderberry"];
-    const parentElement =
-        document
-            .querySelector(".dropdown-menu");
-    const elementsToRemove =
-        document.querySelectorAll("li");
-
-    elementsToRemove.forEach(element => {
-        element.remove();
-    });
-    if (inputValue) {
-        const matchingWords =
-            options
-                .filter(word => word
-                    .includes(inputValue));
-        matchingWords.sort((a, b) => {
-            const indexA =
-                a.indexOf(inputValue);
-            const indexB =
-                b.indexOf(inputValue);
-            return indexA - indexB;
-        });
-        matchingWords.forEach(word => {
-            const listItem =
-                document.createElement("li");
-            const link =
-                document.createElement("a");
-            link.classList.add("dropdown-item");
-            link.href = "#";
-            link.textContent = word;
-            listItem.appendChild(link);
-            parentElement.appendChild(listItem);
-        });
-        if (matchingWords.length == 0) {
-            const listItem =
-                document.createElement('li');
-            listItem.textContent = "No Item";
-            listItem.classList.add('dropdown-item');
-            parentElement.appendChild(listItem);
+function searchList() {
+    var input, filter, ul, li, a, i;
+    input = document.getElementById("mySearch");
+    filter = input.value.toUpperCase();
+    ul = document.getElementById("myMenu");
+    li = ul.getElementsByTagName("li");
+    for (i = 0; i < li.length; i++) {
+        if (li[i].innerHTML.toUpperCase().indexOf(filter) > -1) {
+            li[i].style.display = "";
         }
-    } else {
-        options.forEach(word => {
-            const listItem =
-                document.createElement("li");
-            const link =
-                document.createElement("a");
-            link.classList.add("dropdown-item");
-            link.href = "#";
-            link.textContent = word;
-            listItem.appendChild(link);
-            parentElement.appendChild(listItem);
-        });
+        else {
+            li[i].style.display = "none";
+        }
     }
+}
+
+function getListElement(ID) {
+    document.getElementById("mySearch").value = document.getElementById(ID).innerHTML;
 }

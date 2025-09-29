@@ -12,7 +12,16 @@ from .web_ui.launch import launch_toddler_transducer_web_app
 
 def main():
     def term_handler(signum, frame):
+        """
+        Handles the sigterm event so that the gpio can be cleaned up if its being used.
+        Based on this blog, https://chadrick-kwag.net/posts/python-interrupt-sigterm-sigkill-exception-handling-experiments/
+
+        Args:
+            signum:
+            frame:
+        """
         print("sig term handler")
+        # https://stackoverflow.com/questions/56098431/runtimewarning-this-channel-is-already-in-use
         RPi.GPIO.cleanup()
         sys.exit(0)
 
