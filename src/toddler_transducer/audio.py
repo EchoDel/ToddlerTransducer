@@ -9,9 +9,9 @@ This uses the py vlc interface, api reference, https://www.olivieraubert.net/vlc
 import logging
 import time
 from typing import Optional
+from pathlib import Path
 
 import vlc
-from pathlib import Path
 
 from .config import AUDIO_FILE_BASE_PATH
 from .metadata import load_metadata, TrackMetadata
@@ -36,7 +36,6 @@ def load_track(rfid_tag: Optional[int] = None, track_name: Optional[str] = None)
         audio_path: Path = AUDIO_FILE_BASE_PATH / track_name
     else:
         raise TypeError('Must provide either rfid_tag or track_name')
-    print(audio_path)
     VLC_MEDIA_LIST_PLAYER.stop()
     media = VLC_MEDIA_INSTANCE.media_new(audio_path)
     media_list = VLC_MEDIA_INSTANCE.media_list_new()

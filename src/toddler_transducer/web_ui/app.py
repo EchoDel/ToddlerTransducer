@@ -1,3 +1,8 @@
+"""
+Flask App
+
+Module used to set up and configure the flask app for later use.
+"""
 import os
 
 from flask import Flask

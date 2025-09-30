@@ -19,13 +19,20 @@ def get_rfid_id() -> int | None:
     Returns:
         (int): The ID of the RFID tag
     """
-    id = reader.read_id_no_block()
-    if id is None:
-        id = reader.read_id_no_block()
-    return id
+    rfid_id = reader.read_id_no_block()
+    if rfid_id is None:
+        rfid_id = reader.read_id_no_block()
+    return rfid_id
 
 
 def threaded_get_rfid_id(rfid_tag_proxy: ValueProxy):
+    """
+    Gets the current RFID ID sector from the reader and adds it to the rfid_tag_proxy
+
+    Args:
+        rfid_tag_proxy (ValueProxy): The object providing a .value items which can be filled with the current rfid tag
+         id.
+    """
     while True:
         rfid_id = get_rfid_id()
         rfid_tag_proxy.value = rfid_id
