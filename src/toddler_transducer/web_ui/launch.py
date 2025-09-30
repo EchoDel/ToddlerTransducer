@@ -3,14 +3,14 @@ Web UI Launch
 
 Launch the web app to play audio.
 """
-from multiprocessing.managers import ValueProxy
+from multiprocessing.managers import ValueProxy, DictProxy
 
 from .app import flask_app
 from .root import add_root_routes
 from ..multithreading_proxy import MultithreadingValueProxy
 
 
-def launch_toddler_transducer_web_app(rfid_tag_proxy: ValueProxy = None):
+def launch_toddler_transducer_web_app(rfid_tag_proxy: ValueProxy = None, vlc_playback_manager: DictProxy = None):
     """
     Launch the web app through waitress as a "production" environment,
 
@@ -21,11 +21,11 @@ def launch_toddler_transducer_web_app(rfid_tag_proxy: ValueProxy = None):
     if rfid_tag_proxy is None:
         rfid_tag_proxy = MultithreadingValueProxy()
     from waitress import serve
-    add_root_routes(flask_app, rfid_tag_proxy)
+    add_root_routes(flask_app, rfid_tag_proxy, vlc_playback_manager)
     serve(flask_app, host="0.0.0.0", port=8080)
 
 
-def launch_dev_toddler_transducer_web_app(rfid_tag_proxy: ValueProxy = None):
+def launch_dev_toddler_transducer_web_app(rfid_tag_proxy: ValueProxy = None, vlc_playback_manager: DictProxy = None):
     """
     Launch the web app through flask to develop,
 
@@ -35,5 +35,5 @@ def launch_dev_toddler_transducer_web_app(rfid_tag_proxy: ValueProxy = None):
     """
     if rfid_tag_proxy is None:
         rfid_tag_proxy = MultithreadingValueProxy()
-    add_root_routes(flask_app, rfid_tag_proxy)
+    add_root_routes(flask_app, rfid_tag_proxy, vlc_playback_manager)
     flask_app.run(host="0.0.0.0", port=8080)
