@@ -4,7 +4,7 @@ Web UI Root
 Module containing all of the routes for the root page of the application.
 """
 import json
-from multiprocessing.managers import ValueProxy
+from multiprocessing.managers import ValueProxy, DictProxy
 from pathlib import Path
 from uuid import uuid1
 
@@ -13,13 +13,12 @@ from werkzeug.utils import secure_filename
 
 from .html_templates import PLAY_BUTTON, PAUSE_BUTTON
 from ..audio_file_manager import get_current_files
-from ..audio import load_track, get_playing_track, is_playing, get_track_length, get_track_time, pause_vlc, play_vlc, \
-    toggle_loop_vlc, get_looping
+from ..audio import seconds_to_mmss
 from ..config import AUDIO_FILE_BASE_PATH
-from ..metadata import append_to_metadata
+from ..metadata import append_to_metadata, load_metadata
 
 
-def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy):
+def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_manager: DictProxy):
     """
     Add routes for the root page of the application.
 
@@ -27,31 +26,35 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy):
         flask_app (Flask): Flask application instance to add routes to.
         rfid_tag_proxy (ValueProxy): Rfid tag proxy instance.
     """
+    metadata = load_metadata()
+
     @flask_app.route('/')
     def home() -> str:
         playable_tracks = get_current_files()
-        current_track_metadata = get_playing_track()
+        current_track_uuid = vlc_playback_manager['current_playing_track_uuid']
         track_names = list(playable_tracks.keys())
         current_puck_id = rfid_tag_proxy.value
         session['current_puck_id'] = current_puck_id
 
-        if current_track_metadata is None:
+        if current_track_uuid is None:
             track_name = 'Load Track'
         else:
-            track_name = current_track_metadata['track_name']
+            track_name = metadata[current_track_uuid]['track_name']
 
-        if is_playing():
+        if vlc_playback_manager['is_playing']:
             play_status = 'Playing'
             play_status_icon = PAUSE_BUTTON
-            track_length = get_track_length()
-            track_time = get_track_time()
+            track_length = vlc_playback_manager['track_length']
+            track_time = vlc_playback_manager['track_time_through']
+            track_length_str = seconds_to_mmss(track_length)
+            track_time_str = seconds_to_mmss(track_time)
         else:
             play_status = 'Paused'
             play_status_icon = PLAY_BUTTON
-            track_length = "00:00"
-            track_time = "00:00"
+            track_length_str = "00:00"
+            track_time_str = "00:00"
 
-        if get_looping():
+        if vlc_playback_manager['is_looping']:
             loop_icon_class = 'icon-container-looping'
         else:
             loop_icon_class = 'icon-container'
@@ -62,8 +65,8 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy):
                                      track_name=track_name,
                                      play_status=play_status,
                                      play_status_icon=play_status_icon,
-                                     play_track_length=track_length,
-                                     play_current_time=track_time,
+                                     play_track_length=track_length_str,
+                                     play_current_time=track_time_str,
                                      loop_icon_class=loop_icon_class,
                                      current_puck_id=current_puck_id)
         return html_files
@@ -74,12 +77,14 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy):
         playable_tracks = get_current_files()
         if request.form['AudioTrackName'] not in playable_tracks:
             if 'Playing' in request.form:
-                pause_vlc()
+                vlc_playback_manager['do_pause'] = True
             else:
-                play_vlc()
+                vlc_playback_manager['do_play'] = True
             return redirect(request.referrer)
         # Play the audio track
-        load_track(track_name=playable_tracks[request.form['AudioTrackName']])
+
+        vlc_playback_manager['play_track_name'] = playable_tracks[request.form['AudioTrackName']]
+        vlc_playback_manager['playback_source'] = 'webui'
         return redirect(request.referrer)
 
     @flask_app.route('/upload_track', methods=['POST'])
@@ -100,5 +105,5 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy):
 
     @flask_app.route('/loop_track', methods=['POST'])
     def loop_track():
-        toggle_loop_vlc()
+        vlc_playback_manager['toggle_looping'] = True
         return redirect(request.referrer)

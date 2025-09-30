@@ -6,23 +6,32 @@ Module containing the code for the reading the RFID tag with the MFRC522 board
 import time
 from multiprocessing.managers import ValueProxy
 
-from mfrc522 import SimpleMFRC522
+try:
+    from mfrc522 import SimpleMFRC522
 
-reader = SimpleMFRC522()
-CURRENT_ID = None
+    reader = SimpleMFRC522()
 
+    def get_rfid_id() -> int | None:
+        """
+        Gets the current RFID ID sector from the reader
 
-def get_rfid_id() -> int | None:
-    """
-    Gets the current RFID ID sector from the reader
-
-    Returns:
-        (int): The ID of the RFID tag
-    """
-    rfid_id = reader.read_id_no_block()
-    if rfid_id is None:
+        Returns:
+            (int): The ID of the RFID tag
+        """
         rfid_id = reader.read_id_no_block()
-    return rfid_id
+        if rfid_id is None:
+            rfid_id = reader.read_id_no_block()
+        return rfid_id
+
+except ImportError:
+    def get_rfid_id() -> int | None:
+        """
+        Gets the current RFID ID sector from the reader
+
+        Returns:
+            (int): The ID of the RFID tag
+        """
+        return None
 
 
 def threaded_get_rfid_id(rfid_tag_proxy: ValueProxy):
