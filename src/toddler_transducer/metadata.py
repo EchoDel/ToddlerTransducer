@@ -4,7 +4,9 @@ Metadata
 Module containing the functions for working with the metadata of the audio files.
 """
 import json
+import time
 from typing import TypedDict
+from shutil import copy2
 
 from toddler_transducer.config import METADATA_FILE_PATH
 
@@ -42,6 +44,8 @@ def save_metadata(metadata):
     Args:
         metadata (Metadata): The metadata of the audio files to be saved.
     """
+    metadata_backup_name = f'{METADATA_FILE_PATH.name}_{time.strftime("%Y%m%d-%H%M%S")}'
+    copy2(METADATA_FILE_PATH, METADATA_FILE_PATH.with_name(metadata_backup_name))
     METADATA_FILE_PATH.write_text(json.dumps(metadata), encoding='UTF-8')
 
 
