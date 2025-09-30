@@ -1,3 +1,8 @@
+"""
+Main
+
+Contains the main function which setups up all the subprocess and controls the flow of data between them.
+"""
 import signal
 import time
 import sys
@@ -11,10 +16,16 @@ from .web_ui.launch import launch_toddler_transducer_web_app
 
 
 def main():
+    """
+    The main function for the program.
+    This controls both the puck playback and the webapp playback through multiprocessing.
+    """
+
     def term_handler(signum, frame):
         """
         Handles the sigterm event so that the gpio can be cleaned up if its being used.
-        Based on this blog, https://chadrick-kwag.net/posts/python-interrupt-sigterm-sigkill-exception-handling-experiments/
+        Based on this blog;
+         * https://chadrick-kwag.net/posts/python-interrupt-sigterm-sigkill-exception-handling-experiments/
 
         Args:
             signum:

@@ -1,3 +1,8 @@
+"""
+Puck Playback
+
+Module containing the code needed to play a song based on the contents of a rfid tag being placed on a reader.
+"""
 import time
 from multiprocessing.managers import ValueProxy
 
@@ -5,6 +10,12 @@ from toddler_transducer.audio import is_playing, stop_vlc, load_track
 
 
 def puck_playback_loop(rfid_tag_proxy: ValueProxy):
+    """
+    The main loop of the puck playback.
+
+    Args:
+        rfid_tag_proxy (ValueProxy): The objects providing a .value items containing the current rfid tag id.
+    """
     current_tag_id = None
     puck_remove_count = 0
     while True:

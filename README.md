@@ -5,14 +5,18 @@ Project for playing audio from a speaker using physical pucks
 # Todo
 
 - [x] Wiring Diagram
+  - [ ] Add a filter for the noise, https://andybrown.me.uk/2015/07/24/usb-filtering/
 - [ ] Finalise enclosure
 - [x] Basic Software
+  - [ ] Seamless looping of puck
 - [x] OTA Update
   - [x] Build Pipeline
 - [x] Playback without puck
 - [x] Codeless adding of new files
-- [ ] Type hints
+- [x] Type hints and doc strings
 - [x] Clean up GPIO after stopping
+- [ ] Error check and keep backups of the metadata
+- [ ] VLC to its own thread
 
 ## Music Playback loop
 
