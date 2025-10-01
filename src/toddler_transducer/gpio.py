@@ -16,8 +16,8 @@ class LEDSwitch:
     def __init__(self, sense_pin: int, indicator_pin: int):
         self.sense_pin = sense_pin
         self.indicator_pin = indicator_pin
-        GPIO(self.sense_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO(self.indicator_pin, GPIO.OUT)
+        GPIO.setup(self.sense_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(self.indicator_pin, GPIO.OUT)
         self.indicator_status = False
         self.was_high = False
 
