@@ -70,7 +70,7 @@ def main():
     rfid_process.start()
 
     # Start the button process
-    button_process = Process(target=gpio_update_loop, args=(vlc_playback_manager, ))
+    button_process = Process(target=gpio_update_loop, args=(wifi_manager, vlc_playback_manager, ))
     button_process.start()
 
     # Start the vlc process
