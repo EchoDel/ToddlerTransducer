@@ -19,6 +19,7 @@ class LEDSwitch:
         GPIO(self.sense_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO(self.indicator_pin, GPIO.OUT)
         self.indicator_status = False
+        self.was_high = False
 
     def update_led(self):
         GPIO.output(self.indicator_pin, self.indicator_status)
@@ -40,7 +41,11 @@ class LEDSwitch:
 
     def update(self):
         if self.get_input() == GPIO.LOW:
-            self.toggle()
+            if self.was_high:
+                self.toggle()
+            self.was_high = False
+        else:
+            self.was_high = True
 
 
 def gpio_update_loop(wifi_manager: DictProxy, vlc_playback_manager: DictProxy):

@@ -10,6 +10,7 @@ from multiprocessing import Process, Manager
 
 from toddler_transducer.rfid import threaded_get_rfid_id
 from .audio import VLCControlDict, launch_vlc_threaded
+from .gpio import gpio_update_loop
 from .puck_playback import puck_playback_loop
 from .web_ui.launch import launch_toddler_transducer_web_app
 
@@ -68,16 +69,20 @@ def main():
     rfid_process = Process(target=threaded_get_rfid_id, args=(rfid_tag_proxy,))
     rfid_process.start()
 
+    # Start the button process
+    button_process = Process(target=gpio_update_loop, args=(vlc_playback_manager, ))
+    button_process.start()
+
     # Start the vlc process
-    puck_playback_process = Process(target=launch_vlc_threaded, args=(vlc_playback_manager, ))
-    puck_playback_process.start()
+    vlc_process = Process(target=launch_vlc_threaded, args=(vlc_playback_manager, ))
+    vlc_process.start()
 
     # Start the puck playback loop
     puck_playback_process = Process(target=puck_playback_loop, args=(rfid_tag_proxy, vlc_playback_manager))
     puck_playback_process.start()
 
     # Start the flask app
-    puck_playback_process = Process(target=launch_toddler_transducer_web_app, args=(rfid_tag_proxy, vlc_playback_manager))
-    puck_playback_process.start()
+    flask_process = Process(target=launch_toddler_transducer_web_app, args=(rfid_tag_proxy, vlc_playback_manager))
+    flask_process.start()
     while True:
         time.sleep(100000)  # Main loop has to keep running until all the process finish
