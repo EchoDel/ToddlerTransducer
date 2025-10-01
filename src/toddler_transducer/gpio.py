@@ -8,7 +8,7 @@ from multiprocessing.managers import DictProxy
 
 from RPi import GPIO
 
-from config import LOOPING_SENSE_PIN, LOOPING_INDICATOR_PIN, WIFI_SENSE_PIN, WIFI_INDICATOR_PIN
+from .config import LOOPING_SENSE_PIN, LOOPING_INDICATOR_PIN, WIFI_SENSE_PIN, WIFI_INDICATOR_PIN
 
 GPIO.setmode(GPIO.BOARD)
 
