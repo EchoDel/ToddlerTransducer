@@ -60,6 +60,10 @@ def main():
         'track_time_through': None,
         })
 
+    wifi_manager: VLCControlDict = multithread_manager.dict(
+        {'wifi_state': False,
+         })
+
     # Start the rfid process
     rfid_process = Process(target=threaded_get_rfid_id, args=(rfid_tag_proxy,))
     rfid_process.start()
