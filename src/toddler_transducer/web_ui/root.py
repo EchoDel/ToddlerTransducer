@@ -4,15 +4,16 @@ Web UI Root
 Module containing all of the routes for the root page of the application.
 """
 import json
+from multiprocessing import Process
 from multiprocessing.managers import ValueProxy, DictProxy
 from pathlib import Path
 from uuid import uuid1
 
-from flask import render_template, request, redirect, session, Flask
+from flask import render_template, request, redirect, session, Flask, send_from_directory
 from werkzeug.utils import secure_filename
 
 from .html_templates import PLAY_BUTTON, PAUSE_BUTTON
-from ..audio_file_manager import get_current_files
+from ..audio_file_manager import get_current_files, backup_audio_files
 from ..audio import seconds_to_mmss
 from ..config import AUDIO_FILE_BASE_PATH
 from ..metadata import append_to_metadata, load_metadata
@@ -101,9 +102,18 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
             append_to_metadata(file_stem, str(file_name), session['current_puck_id'], request.form['TrackName'])
             file.save(AUDIO_FILE_BASE_PATH / file_name)
 
+            # Create a new backup of the files
+            backup_process = Process(target=backup_audio_files)
+            backup_process.start()
+
         return redirect(request.referrer)
 
     @flask_app.route('/loop_track', methods=['POST'])
     def loop_track():
         vlc_playback_manager['toggle_looping'] = True
         return redirect(request.referrer)
+
+    @flask_app.route('/backup_audio', methods=['GET'])
+    def download_backup():
+        AUDIO_FILE_BASE_PATH
+        send_from_directory(uploads, filename)
