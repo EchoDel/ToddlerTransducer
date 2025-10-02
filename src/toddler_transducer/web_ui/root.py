@@ -13,7 +13,7 @@ from flask import render_template, request, redirect, session, Flask, send_from_
 from werkzeug.utils import secure_filename
 
 from .html_templates import PLAY_BUTTON, PAUSE_BUTTON
-from ..audio_file_manager import get_current_files, backup_audio_files
+from ..audio_file_manager import get_current_files, backup_audio_files, get_sorted_backup_item
 from ..audio import seconds_to_mmss
 from ..config import AUDIO_FILE_BASE_PATH
 from ..metadata import append_to_metadata, load_metadata
@@ -115,5 +115,8 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
 
     @flask_app.route('/backup_audio', methods=['GET'])
     def download_backup():
-        AUDIO_FILE_BASE_PATH
-        send_from_directory(uploads, filename)
+        latest_backup = get_sorted_backup_item(-1)
+        backup_location = Path(latest_backup.items()[0])
+
+        # https://stackoverflow.com/questions/24577349/flask-download-a-file
+        send_from_directory(backup_location.parent, backup_location.name)

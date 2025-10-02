@@ -42,6 +42,13 @@ def delete_old_backups(backups_to_delete: dict[datetime, str], prior_backups: di
     return prior_backups
 
 
+def get_sorted_backup_item(location: int):
+    prior_backups = load_backup_metadata()
+    sorted_dict = dict(sorted(prior_backups.items()))
+    # https://stackoverflow.com/questions/16976096/take-the-first-x-elements-of-a-dictionary-on-python
+    return dict(itertools.islice(sorted_dict.items(), location))
+
+
 def backup_audio_files():
     prior_backups = load_backup_metadata()
     backup_time = datetime.now().strftime("%Y%m%d%H%M%S")
