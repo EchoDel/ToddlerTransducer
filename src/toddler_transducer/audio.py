@@ -151,6 +151,12 @@ def get_track_time(vlc_media_list_player: vlc.MediaListPlayer) -> float:
 
 
 def launch_vlc_threaded(vlc_playback_manager: VLCControlDict):
+    """
+    Launch the vlc instance to be used with the vlc control dict
+
+    Args:
+        vlc_playback_manager (VLCControlDict): VLCControlDict instance:
+    """
     # Starting the vlc instance
     vlc_instance = vlc.Instance("--aout=alsa")
     vlc_media_list_player = vlc_instance.media_list_player_new()

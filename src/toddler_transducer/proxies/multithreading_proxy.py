@@ -1,7 +1,7 @@
 """
 Multithreading proxy proxy
 
-Provides a simple remplacement for the Multithreading value when not multithreading
+Provides a simple replacement for the Multithreading value when not multithreading
 """
 
 class MultithreadingValueProxy:
