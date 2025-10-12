@@ -8,12 +8,12 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "fake_rpi (>=0.7.1) ; sys_platform == 'win32'",
-    "mfrc522",
+    "fake_rpi (>=0.7.1);  os_name != 'raspbian'",
     "python-vlc",
     "flask",
-    "RPi.GPIO",
-    "spidev"
+    "mfrc522;  os_name == 'raspbian'",
+    "RPi.GPIO;  os_name == 'raspbian'",
+    "spidev;  os_name == 'raspbian'"
 ]
 
 [tool.pylint.main]

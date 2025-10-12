@@ -8,7 +8,8 @@ import time
 import sys
 from multiprocessing import Process, Manager
 
-from toddler_transducer.rfid import threaded_get_rfid_id
+from .fake_rpi_setup import *
+from .rfid import threaded_get_rfid_id
 from .audio import VLCControlDict, launch_vlc_threaded
 from .gpio import gpio_update_loop
 from .puck_playback import puck_playback_loop
