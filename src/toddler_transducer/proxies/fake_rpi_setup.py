@@ -1,4 +1,8 @@
+"""
+Proxies Fake RPI Setup
 
+Sets up the fake gpio if its not running on the r pi.
+"""
 import os
 import sys
 
