@@ -8,31 +8,23 @@ from multiprocessing.managers import ValueProxy
 
 try:
     from mfrc522 import SimpleMFRC522
-
     reader = SimpleMFRC522()
-
-    def get_rfid_id() -> int | None:
-        """
-        Gets the current RFID ID sector from the reader
-
-        Returns:
-            (int): The ID of the RFID tag
-        """
-        rfid_id = reader.read_id_no_block()
-        if rfid_id is None:
-            rfid_id = reader.read_id_no_block()
-        return rfid_id
-
 except ImportError:
-    def get_rfid_id() -> int | None:
-        """
-        Gets the current RFID ID sector from the reader
+    from .proxies import SimpleMFRC522Proxy
+    reader = SimpleMFRC522Proxy()
 
-        Returns:
-            (int): The ID of the RFID tag
-        """
-        return None
 
+def get_rfid_id() -> int | None:
+    """
+    Gets the current RFID ID sector from the reader
+
+    Returns:
+        (int): The ID of the RFID tag
+    """
+    rfid_id = reader.read_id_no_block()
+    if rfid_id is None:
+        rfid_id = reader.read_id_no_block()
+    return rfid_id
 
 def threaded_get_rfid_id(rfid_tag_proxy: ValueProxy):
     """

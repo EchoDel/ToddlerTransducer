@@ -34,7 +34,8 @@ def save_backup_metadata(backup_list: dict[datetime, str]):
         json.dump(backup_list, f)
 
 
-def delete_old_backups(backups_to_delete: dict[datetime, str], prior_backups: dict[datetime, str]) -> dict[datetime, str]:
+def delete_old_backups(backups_to_delete: dict[datetime, str],
+                       prior_backups: dict[datetime, str]) -> dict[datetime, str]:
     # Delete the old backups
     for backup_key, backup_path in backups_to_delete.items():
         prior_backups[backup_key] = None
