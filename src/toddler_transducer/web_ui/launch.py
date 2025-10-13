@@ -5,9 +5,9 @@ Launch the web app to play audio.
 """
 from multiprocessing.managers import ValueProxy, DictProxy
 
-from .app import flask_app
-from .root import add_root_routes
-from ..proxies.multithreading_proxy import MultithreadingValueProxy
+from toddler_transducer.web_ui.app import flask_app
+from toddler_transducer.web_ui.root import add_root_routes
+from toddler_transducer.proxies.multithreading_proxy import MultithreadingValueProxy
 
 
 def launch_toddler_transducer_web_app(rfid_tag_proxy: ValueProxy = None, vlc_playback_manager: DictProxy = None):
