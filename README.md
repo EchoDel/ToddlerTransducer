@@ -9,7 +9,7 @@ Project for playing audio from a speaker using physical pucks
 - [ ] Finalise enclosure
 - [x] Basic Software
   - [x] Seamless looping of puck
-  - [ ] Add a physical button for the looping and get light to toggle when switched in UI
+  - [x] Add a physical button for the looping and get light to toggle when switched in UI
 - [x] OTA Update
   - [x] Build Pipeline
 - [x] Playback without puck
@@ -66,6 +66,7 @@ https://stackoverflow.com/questions/24577349/flask-download-a-file
 
 VLC Python docs, https://www.olivieraubert.net/vlc/python-ctypes/doc/
 Loop VLC, https://stackoverflow.com/questions/7214843/repeating-single-movie-using-python-bindings-for-vlc-what-is-a-psz-name
+
 
 # Install
 

@@ -13,8 +13,8 @@ from pathlib import Path
 
 import vlc
 
-from .config import AUDIO_FILE_BASE_PATH
-from .metadata import load_metadata, TrackMetadata
+from toddler_transducer.config import AUDIO_FILE_BASE_PATH
+from toddler_transducer.metadata import load_metadata
 
 
 def seconds_to_mmss(seconds: float) -> str:
@@ -51,13 +51,23 @@ class VLCControlDict(TypedDict):
 
 def load_track(vlc_instance: vlc.Instance, vlc_media_list_player: vlc.MediaListPlayer,
                looping: bool = False, rfid_tag: Optional[int] = None, track_name: Optional[str] = None,):
+    """
+    Loads a track into a vlc instance.
+
+    Args:
+        vlc_instance (vlc.Instance): The vlc instance to load the track into.
+        vlc_media_list_player (vlc.MediaListPlayer): The vlc media list player to load the track into.
+        looping (bool, optional): Whether to loop the vlc instance. Defaults to False.
+        rfid_tag (Optional[int], optional): The tag of the rfid tag to use. Defaults to None.
+        track_name (Optional[str], optional): The track name to use. Defaults to None.
+    """
     if rfid_tag is not None:
         metadata = load_metadata()
         track_to_play = [value for key, value in metadata.items() if value['rfid_id'] == rfid_tag]
         if len(track_to_play) > 0:
             audio_path: Path = AUDIO_FILE_BASE_PATH / track_to_play[0]['file_name']
         else:
-            logging.warning(f"No track found for {rfid_tag}")
+            logging.warning("No track found for %s", rfid_tag)
             return
     elif track_name is not None:
         audio_path: Path = AUDIO_FILE_BASE_PATH / track_name
@@ -108,7 +118,7 @@ def get_playing_track(vlc_media_list_player: vlc.MediaListPlayer) -> str:
     Returns the metadata of the playing track.
 
     Returns:
-        (TrackMetadata): The metadata of the playing track.
+        (str): The uuid of the playing track.
     """
     media = vlc_media_list_player.get_media_player().get_media()
     if media is None:
@@ -185,7 +195,8 @@ def launch_vlc_threaded(vlc_playback_manager: VLCControlDict):
             vlc_playback_manager['do_stop'] = False
 
         if vlc_playback_manager['toggle_looping']:
-            vlc_playback_manager['is_looping'] = toggle_loop_vlc(vlc_media_list_player, vlc_playback_manager['is_looping'])
+            vlc_playback_manager['is_looping'] = toggle_loop_vlc(vlc_media_list_player,
+                                                                 vlc_playback_manager['is_looping'])
             vlc_playback_manager['toggle_looping'] = False
 
         vlc_playback_manager['is_playing'] = is_playing(vlc_media_list_player)

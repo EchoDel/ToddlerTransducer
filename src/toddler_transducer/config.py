@@ -8,6 +8,7 @@ from pathlib import Path
 AUDIO_FILE_BASE_PATH = Path('./audio_files')
 METADATA_FILE_PATH = AUDIO_FILE_BASE_PATH / 'metadata'
 BACKUP_FILE_BASE_PATH = Path('./backups')
+BACKUP_FILE_BASE_PATH.mkdir(parents=True, exist_ok=True)
 
 # GPIO pins
 LOOPING_SENSE_PIN = 38

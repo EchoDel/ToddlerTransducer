@@ -8,11 +8,14 @@ from multiprocessing.managers import DictProxy
 
 from RPi import GPIO
 
-from .config import LOOPING_SENSE_PIN, LOOPING_INDICATOR_PIN, WIFI_SENSE_PIN, WIFI_INDICATOR_PIN
+from toddler_transducer.config import LOOPING_SENSE_PIN, LOOPING_INDICATOR_PIN, WIFI_SENSE_PIN, WIFI_INDICATOR_PIN
 
 GPIO.setmode(GPIO.BOARD)
 
 class LEDSwitch:
+    """
+    Class to handle a momentary with an LED status indicator
+    """
     def __init__(self, sense_pin: int, indicator_pin: int):
         self.sense_pin = sense_pin
         self.indicator_pin = indicator_pin
@@ -22,24 +25,42 @@ class LEDSwitch:
         self.was_high = False
 
     def update_led(self):
+        """
+        Sets the LED output to be that of the indicator status.
+        """
         GPIO.output(self.indicator_pin, self.indicator_status)
 
     def toggle(self):
+        """
+        Toggles the state.
+        """
         self.indicator_status = not self.indicator_status
         self.update_led()
 
     def switch_on(self):
+        """
+        Turns the switch on.
+        """
         self.indicator_status = True
         self.update_led()
 
     def switch_off(self):
+        """
+        Turns the switch of.
+        """
         self.indicator_status = False
         self.update_led()
 
     def get_input(self):
+        """
+        Gets the input from the momentary switch.
+        """
         return GPIO.input(self.sense_pin)
 
     def update(self):
+        """
+        Updates the status and output.
+        """
         if self.get_input() == GPIO.LOW:
             if self.was_high:
                 self.toggle()
@@ -49,6 +70,13 @@ class LEDSwitch:
 
 
 def gpio_update_loop(wifi_manager: DictProxy, vlc_playback_manager: DictProxy):
+    """
+    Loops to run in a thread to handle the updating of the gpio switched with the process.
+
+    Args:
+        wifi_manager (DictProxy): The wifi manager.
+        vlc_playback_manager (DictProxy): The vlc playback manager.
+    """
     looping_switch = LEDSwitch(LOOPING_SENSE_PIN, LOOPING_INDICATOR_PIN)
     wifi_switch = LEDSwitch(WIFI_SENSE_PIN, WIFI_INDICATOR_PIN)
 

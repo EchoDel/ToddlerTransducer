@@ -10,7 +10,7 @@ try:
     from mfrc522 import SimpleMFRC522
     reader = SimpleMFRC522()
 except ImportError:
-    from .proxies import SimpleMFRC522Proxy
+    from toddler_transducer.proxies import SimpleMFRC522Proxy
     reader = SimpleMFRC522Proxy()
 
 
