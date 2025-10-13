@@ -116,7 +116,7 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
     @flask_app.route('/backup_audio', methods=['GET'])
     def download_backup():
         latest_backup = get_sorted_backup_item(-1)
-        backup_location = Path(latest_backup.items()[0])
-
+        backup_location = next(iter(latest_backup.values()))
+        backup_location = Path(__file__).parents[3] / backup_location
         # https://stackoverflow.com/questions/24577349/flask-download-a-file
-        send_from_directory(backup_location.parent, backup_location.name)
+        return send_from_directory(backup_location.parent, backup_location.name)

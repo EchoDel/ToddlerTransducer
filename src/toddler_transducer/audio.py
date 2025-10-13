@@ -14,7 +14,7 @@ from pathlib import Path
 import vlc
 
 from .config import AUDIO_FILE_BASE_PATH
-from .metadata import load_metadata, TrackMetadata
+from .metadata import load_metadata
 
 
 def seconds_to_mmss(seconds: float) -> str:
@@ -108,7 +108,7 @@ def get_playing_track(vlc_media_list_player: vlc.MediaListPlayer) -> str:
     Returns the metadata of the playing track.
 
     Returns:
-        (TrackMetadata): The metadata of the playing track.
+        (str): The uuid of the playing track.
     """
     media = vlc_media_list_player.get_media_player().get_media()
     if media is None:
@@ -185,7 +185,8 @@ def launch_vlc_threaded(vlc_playback_manager: VLCControlDict):
             vlc_playback_manager['do_stop'] = False
 
         if vlc_playback_manager['toggle_looping']:
-            vlc_playback_manager['is_looping'] = toggle_loop_vlc(vlc_media_list_player, vlc_playback_manager['is_looping'])
+            vlc_playback_manager['is_looping'] = toggle_loop_vlc(vlc_media_list_player,
+                                                                 vlc_playback_manager['is_looping'])
             vlc_playback_manager['toggle_looping'] = False
 
         vlc_playback_manager['is_playing'] = is_playing(vlc_media_list_player)
