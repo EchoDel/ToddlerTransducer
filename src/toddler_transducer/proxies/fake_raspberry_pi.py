@@ -1,10 +1,22 @@
+"""
+Fake Raspberry Pi
+
+Module to replicate the raspberry pi package when not installed on a raspberry pi.
+"""
 from random import randint
 from functools import wraps
 
 PRINT_ON = False
+RANDOMIZE_INPUT = False
 
 
-def toggle_print(p):
+def switch_print(p: bool):
+    """
+    Toggle the print of the fake raspberry pi usage.
+
+    Args:
+        p (bool): The print status, if True then prints each time a fake raspberry pi interface is used
+    """
     global PRINT_ON
     PRINT_ON = p
 
@@ -27,19 +39,24 @@ def printf(f):
         return r
     return wrapped
 
-RANDOMIZE_INPUT = False
-
 
 def switch_randomize_inputs(p: bool):
+    """
+    Toggle the randomization of the fake raspberry pi inputs.
+
+    Args:
+        p (bool): The randomization approach, if True then inputs are randomized each time a fake raspberry pi
+         interface is used.
+    """
     global RANDOMIZE_INPUT
     RANDOMIZE_INPUT = p
 
 
-class Base(object):
+class Base:
     def __init__(self, name=None):
         print('<<< WARNING: using fake raspberry pi interfaces >>>')
         if name:
-            print('<<< Using: {} >>>'.format(name))
+            print(f'<<< Using: {name} >>>')
 
 
 class _GPIO(Base):
@@ -98,16 +115,20 @@ class _GPIO(Base):
         self._inputs = [None] * 40  # We have 40 input pins
 
     @printf
-    def setwarnings(self, a): pass
+    def setwarnings(self, a):
+        pass
 
     @printf
-    def setmode(self, a): pass
+    def setmode(self, a):
+        pass
 
     @printf
-    def getmode(self): return GPIO.BCM
+    def getmode(self):
+        return GPIO.BCM
 
     @printf
-    def setup(self, channel, state, initial=0, pull_up_down=None): pass
+    def setup(self, channel, state, initial=0, pull_up_down=None):
+        pass
 
     @printf
     def input(self, channel):
@@ -122,28 +143,36 @@ class _GPIO(Base):
         self._inputs[channel] = value
 
     @printf
-    def cleanup(self, a=None): pass
+    def cleanup(self, a=None):
+        pass
 
     @printf
-    def output(self, channel, state): pass
+    def output(self, channel, state):
+        pass
 
     @printf
-    def wait_for_edge(self, channel, edge): pass
+    def wait_for_edge(self, channel, edge):
+        pass
 
     @printf
-    def add_event_detect(self, channel, edge, callback=None, bouncetime=None): pass
+    def add_event_detect(self, channel, edge, callback=None, bouncetime=None):
+        pass
 
     @printf
-    def add_event_callback(self, channel, callback=None): pass
+    def add_event_callback(self, channel, callback=None):
+        pass
 
     @printf
-    def remove_event_detect(self, channel): pass
+    def remove_event_detect(self, channel):
+        pass
 
     @printf
-    def event_detected(self, channel): return False
+    def event_detected(self, channel):
+        return False
 
     @printf
-    def gpio_function(self, channel): return GPIO.OUT
+    def gpio_function(self, channel):
+        return GPIO.OUT
 
 
 GPIO = _GPIO()
