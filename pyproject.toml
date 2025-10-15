@@ -8,12 +8,11 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "fake_rpi (>=0.7.1);  platform_machine != 'aarch64'",
     "python-vlc",
     "flask",
-    "mfrc522;  platform_machine != 'aarch64'",
-    "RPi.GPIO;  platform_machine != 'aarch64'",
-    "spidev;  platform_machine != 'aarch64'"
+    "mfrc522;  platform_machine == 'aarch64'",
+    "RPi.GPIO;  platform_machine == 'aarch64'",
+    "spidev;  platform_machine == 'aarch64'"
 ]
 
 [tool.pylint.main]

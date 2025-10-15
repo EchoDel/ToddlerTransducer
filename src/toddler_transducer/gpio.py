@@ -59,7 +59,7 @@ class LEDSwitch:
 
     def update(self):
         """
-        Updates the status and output.
+        Updates the status and output. On the falling edge
         """
         if self.get_input() == GPIO.LOW:
             if self.was_high:
@@ -91,5 +91,6 @@ def gpio_update_loop(wifi_manager: DictProxy, vlc_playback_manager: DictProxy):
         looping_switch.update()
         if looping_switch.indicator_status != vlc_playback_manager['is_looping']:
             vlc_playback_manager['toggle_looping'] = True
+            time.sleep(5)
 
-        time.sleep(0.5)
+        time.sleep(0.1)
