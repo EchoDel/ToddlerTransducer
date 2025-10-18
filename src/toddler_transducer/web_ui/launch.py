@@ -22,6 +22,7 @@ def launch_toddler_transducer_web_app(rfid_tag_proxy: ValueProxy = None, vlc_pla
         rfid_tag_proxy = MultithreadingValueProxy()
     from waitress import serve
     add_root_routes(flask_app, rfid_tag_proxy, vlc_playback_manager)
+    print(f'Launching server at https://localhost:8080')
     serve(flask_app, host="0.0.0.0", port=8080)
 
 
