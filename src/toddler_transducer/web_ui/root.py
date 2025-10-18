@@ -44,14 +44,12 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
 
         if vlc_playback_manager['is_playing']:
             play_status = 'Playing'
-            play_status_icon = PAUSE_BUTTON
             track_length = vlc_playback_manager['track_length']
             track_time = vlc_playback_manager['track_time_through']
             track_length_str = seconds_to_mmss(track_length)
             track_time_str = seconds_to_mmss(track_time)
         else:
             play_status = 'Paused'
-            play_status_icon = PLAY_BUTTON
             track_length_str = "00:00"
             track_time_str = "00:00"
 
@@ -65,7 +63,6 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
                                      playable_tracks_list=json.dumps(track_names),
                                      track_name=track_name,
                                      play_status=play_status,
-                                     play_status_icon=play_status_icon,
                                      play_track_length=track_length_str,
                                      play_current_time=track_time_str,
                                      loop_icon_class=loop_icon_class,
@@ -75,17 +72,22 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
     @flask_app.route('/play_track', methods=['POST'])
     def play_track():
 
-        playable_tracks = get_current_files()
-        if request.form['AudioTrackName'] not in playable_tracks:
-            if 'Playing' in request.form:
-                vlc_playback_manager['do_pause'] = True
-            else:
-                vlc_playback_manager['do_play'] = True
-            return redirect(request.referrer)
+        # if request.form['AudioTrackName'] not in playable_tracks:
+        #     if 'Playing' in request.form:
+        #         vlc_playback_manager['do_pause'] = True
+        #     else:
+        #         vlc_playback_manager['do_play'] = True
+        #     return redirect(request.referrer)
         # Play the audio track
 
+        playable_tracks = get_current_files()
         vlc_playback_manager['play_track_name'] = playable_tracks[request.form['AudioTrackName']]
         vlc_playback_manager['playback_source'] = 'webui'
+        return redirect(request.referrer)
+
+    @flask_app.route('/pause', methods=['POST'])
+    def pause_track():
+        vlc_playback_manager['do_pause'] = True
         return redirect(request.referrer)
 
     @flask_app.route('/upload_track', methods=['POST'])
