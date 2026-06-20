@@ -52,6 +52,8 @@ def main():
         'do_stop': False,
         'do_pause': False,
         'toggle_looping': False,
+        'seek_position': -1.0,
+        'volume': 50,
 
         # State outputs
         'playback_source': None,
