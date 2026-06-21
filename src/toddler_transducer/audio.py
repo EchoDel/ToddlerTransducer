@@ -81,6 +81,7 @@ def load_track(vlc_instance: vlc.Instance, vlc_media_list_player: vlc.MediaListP
     media_list.add_media(media)
     vlc_media_list_player.set_media_list(media_list)
     vlc_media_list_player.play()
+    vlc_media_list_player.get_media_player().audio_set_volume(50)
     if looping:
         vlc_media_list_player.set_playback_mode(1)
 
