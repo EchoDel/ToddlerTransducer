@@ -79,6 +79,7 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
         # Play the audio track
 
         playable_tracks = get_current_files()
+        vlc_playback_manager['play_rfid_id'] = False
         vlc_playback_manager['play_track_name'] = playable_tracks[request.form['AudioTrackName']]
         vlc_playback_manager['playback_source'] = 'webui'
         return redirect(request.referrer)
@@ -141,6 +142,7 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
         if data and 'track_name' in data:
             playable_tracks = get_current_files()
             if data['track_name'] in playable_tracks:
+                vlc_playback_manager['play_rfid_id'] = False
                 vlc_playback_manager['play_track_name'] = playable_tracks[data['track_name']]
                 vlc_playback_manager['playback_source'] = 'webui'
         return {'ok': True}
