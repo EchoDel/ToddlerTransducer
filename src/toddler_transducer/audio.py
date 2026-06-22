@@ -39,6 +39,8 @@ class VLCControlDict(TypedDict):
     do_stop: bool
     do_pause: bool
     toggle_looping: bool
+    seek_position: float
+    volume: int
 
     # State outputs
     playback_source: Literal['puck', 'webui']
@@ -198,6 +200,16 @@ def launch_vlc_threaded(vlc_playback_manager: VLCControlDict):
             vlc_playback_manager['is_looping'] = toggle_loop_vlc(vlc_media_list_player,
                                                                  vlc_playback_manager['is_looping'])
             vlc_playback_manager['toggle_looping'] = False
+
+        seek_pos = vlc_playback_manager.get('seek_position', -1.0)
+        if seek_pos >= 0:
+            media_player = vlc_media_list_player.get_media_player()
+            media_player.set_time(int(seek_pos * 1000))
+            vlc_playback_manager['seek_position'] = -1.0
+
+        volume = vlc_playback_manager.get('volume', 50)
+        media_player = vlc_media_list_player.get_media_player()
+        media_player.audio_set_volume(max(0, min(100, int(volume))))
 
         vlc_playback_manager['is_playing'] = is_playing(vlc_media_list_player)
         vlc_playback_manager['current_playing_track_uuid'] = get_playing_track(vlc_media_list_player)

@@ -3,7 +3,6 @@ Web UI Root
 
 Module containing all of the routes for the root page of the application.
 """
-import json
 from multiprocessing import Process
 from multiprocessing.managers import ValueProxy, DictProxy
 from pathlib import Path
@@ -12,7 +11,6 @@ from uuid import uuid1
 from flask import render_template, request, redirect, session, Flask, send_from_directory
 from werkzeug.utils import secure_filename
 
-from toddler_transducer.web_ui.html_templates import PLAY_BUTTON, PAUSE_BUTTON
 from toddler_transducer.audio_file_manager import get_current_files, backup_audio_files, get_sorted_backup_item
 from toddler_transducer.audio import seconds_to_mmss
 from toddler_transducer.config import AUDIO_FILE_BASE_PATH
@@ -54,18 +52,18 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
             track_time_str = "00:00"
 
         if vlc_playback_manager['is_looping']:
-            loop_icon_class = 'icon-container-looping'
+            loop_icon_class = 'loop-active'
         else:
-            loop_icon_class = 'icon-container'
+            loop_icon_class = ''
 
         html_files = render_template('index.html',
                                      playable_tracks=track_names,
-                                     playable_tracks_list=json.dumps(track_names),
                                      track_name=track_name,
                                      play_status=play_status,
                                      play_track_length=track_length_str,
                                      play_current_time=track_time_str,
                                      loop_icon_class=loop_icon_class,
+                                     volume=vlc_playback_manager.get('volume', 50),
                                      current_puck_id=current_puck_id)
         return html_files
 
@@ -109,6 +107,61 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
             backup_process.start()
 
         return redirect(request.referrer)
+
+    @flask_app.route('/api/player_state')
+    def api_player_state():
+        current_track_uuid = vlc_playback_manager['current_playing_track_uuid']
+        track_name = metadata[current_track_uuid]['track_name'] if current_track_uuid else None
+        return {
+            'is_playing': vlc_playback_manager['is_playing'],
+            'is_looping': vlc_playback_manager['is_looping'],
+            'track_name': track_name,
+            'track_length': vlc_playback_manager['track_length'],
+            'track_time': vlc_playback_manager['track_time_through'],
+            'volume': vlc_playback_manager.get('volume', 50),
+        }
+
+    @flask_app.route('/api/seek', methods=['POST'])
+    def api_seek():
+        data = request.get_json()
+        if data and 'position' in data:
+            vlc_playback_manager['seek_position'] = float(data['position'])
+        return {'ok': True}
+
+    @flask_app.route('/api/volume', methods=['POST'])
+    def api_volume():
+        data = request.get_json()
+        if data and 'volume' in data:
+            vlc_playback_manager['volume'] = max(0, min(100, int(data['volume'])))
+        return {'ok': True}
+
+    @flask_app.route('/api/play_track', methods=['POST'])
+    def api_play_track():
+        data = request.get_json()
+        if data and 'track_name' in data:
+            playable_tracks = get_current_files()
+            if data['track_name'] in playable_tracks:
+                vlc_playback_manager['play_track_name'] = playable_tracks[data['track_name']]
+                vlc_playback_manager['playback_source'] = 'webui'
+        return {'ok': True}
+
+    @flask_app.route('/api/toggle_playback', methods=['POST'])
+    def api_toggle_playback():
+        if vlc_playback_manager['is_playing']:
+            vlc_playback_manager['do_pause'] = True
+        else:
+            vlc_playback_manager['do_play'] = True
+        return {'ok': True}
+
+    @flask_app.route('/api/toggle_loop', methods=['POST'])
+    def api_toggle_loop():
+        vlc_playback_manager['toggle_looping'] = True
+        return {'ok': True}
+
+    @flask_app.route('/api/tracks')
+    def api_tracks():
+        playable_tracks = get_current_files()
+        return {'tracks': list(playable_tracks.keys())}
 
     @flask_app.route('/loop_track', methods=['POST'])
     def loop_track():
