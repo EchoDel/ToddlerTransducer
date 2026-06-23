@@ -25,7 +25,13 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
         flask_app (Flask): Flask application instance to add routes to.
         rfid_tag_proxy (ValueProxy): Rfid tag proxy instance.
     """
-    metadata = load_metadata()
+
+    def resolve_track_name(track_uuid: str):
+        if track_uuid is None:
+            return 'Load Track'
+        meta = load_metadata()
+        entry = meta.get(track_uuid)
+        return entry['track_name'] if entry else 'Load Track'
 
     @flask_app.route('/')
     def home() -> str:
@@ -35,10 +41,7 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
         current_puck_id = rfid_tag_proxy.value
         session['current_puck_id'] = current_puck_id
 
-        if current_track_uuid is None:
-            track_name = 'Load Track'
-        else:
-            track_name = metadata[current_track_uuid]['track_name']
+        track_name = resolve_track_name(current_track_uuid)
 
         if vlc_playback_manager['is_playing']:
             play_status = 'Playing'
@@ -112,7 +115,7 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
     @flask_app.route('/api/player_state')
     def api_player_state():
         current_track_uuid = vlc_playback_manager['current_playing_track_uuid']
-        track_name = metadata[current_track_uuid]['track_name'] if current_track_uuid else None
+        track_name = resolve_track_name(current_track_uuid)
         return {
             'is_playing': vlc_playback_manager['is_playing'],
             'is_looping': vlc_playback_manager['is_looping'],
