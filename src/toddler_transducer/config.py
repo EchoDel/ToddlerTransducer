@@ -10,6 +10,8 @@ METADATA_FILE_PATH = AUDIO_FILE_BASE_PATH / 'metadata'
 BACKUP_FILE_BASE_PATH = Path('./backups')
 BACKUP_FILE_BASE_PATH.mkdir(parents=True, exist_ok=True)
 
+VOLUME_FILE_PATH = Path('./persistent_settings.json')
+
 # GPIO pins
 LOOPING_SENSE_PIN = 38
 LOOPING_INDICATOR_PIN = 40

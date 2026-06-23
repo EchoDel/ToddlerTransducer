@@ -6,6 +6,7 @@ Contains all the code to load, play, stop the audio to play
 This uses the py vlc interface, api reference, https://www.olivieraubert.net/vlc/python-ctypes/doc/.
 
 """
+import json
 import logging
 import time
 from typing import Optional, TypedDict, Literal
@@ -13,8 +14,25 @@ from pathlib import Path
 
 import vlc
 
-from toddler_transducer.config import AUDIO_FILE_BASE_PATH
+from toddler_transducer.config import AUDIO_FILE_BASE_PATH, VOLUME_FILE_PATH
 from toddler_transducer.metadata import load_metadata
+
+
+def load_saved_volume() -> int:
+    try:
+        if VOLUME_FILE_PATH.exists():
+            data = json.loads(VOLUME_FILE_PATH.read_text())
+            return max(0, min(100, int(data.get('volume', 50))))
+    except (json.JSONDecodeError, ValueError, OSError):
+        pass
+    return 50
+
+
+def save_volume(volume: int):
+    try:
+        VOLUME_FILE_PATH.write_text(json.dumps({'volume': max(0, min(100, int(volume)))}))
+    except OSError:
+        pass
 
 
 def seconds_to_mmss(seconds: float) -> str:

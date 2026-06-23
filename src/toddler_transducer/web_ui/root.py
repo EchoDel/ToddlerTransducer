@@ -12,7 +12,7 @@ from flask import render_template, request, redirect, session, Flask, send_from_
 from werkzeug.utils import secure_filename
 
 from toddler_transducer.audio_file_manager import get_current_files, backup_audio_files, get_sorted_backup_item
-from toddler_transducer.audio import seconds_to_mmss
+from toddler_transducer.audio import seconds_to_mmss, save_volume
 from toddler_transducer.config import AUDIO_FILE_BASE_PATH
 from toddler_transducer.metadata import append_to_metadata, load_metadata
 
@@ -136,7 +136,9 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
     def api_volume():
         data = request.get_json()
         if data and 'volume' in data:
-            vlc_playback_manager['volume'] = max(0, min(100, int(data['volume'])))
+            vol = max(0, min(100, int(data['volume'])))
+            vlc_playback_manager['volume'] = vol
+            save_volume(vol)
         return {'ok': True}
 
     @flask_app.route('/api/play_track', methods=['POST'])
