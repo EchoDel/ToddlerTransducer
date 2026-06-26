@@ -30,7 +30,29 @@ def load_saved_volume() -> int:
 
 def save_volume(volume: int):
     try:
-        VOLUME_FILE_PATH.write_text(json.dumps({'volume': max(0, min(100, int(volume)))}))
+        data = {'volume': max(0, min(100, int(volume)))}
+        existing = json.loads(VOLUME_FILE_PATH.read_text()) if VOLUME_FILE_PATH.exists() else {}
+        existing.update(data)
+        VOLUME_FILE_PATH.write_text(json.dumps(existing))
+    except OSError:
+        pass
+
+
+def load_saved_puck_lockout() -> bool:
+    try:
+        if VOLUME_FILE_PATH.exists():
+            data = json.loads(VOLUME_FILE_PATH.read_text())
+            return bool(data.get('puck_lockout', False))
+    except (json.JSONDecodeError, ValueError, OSError):
+        pass
+    return False
+
+
+def save_puck_lockout(locked: bool):
+    try:
+        existing = json.loads(VOLUME_FILE_PATH.read_text()) if VOLUME_FILE_PATH.exists() else {}
+        existing['puck_lockout'] = bool(locked)
+        VOLUME_FILE_PATH.write_text(json.dumps(existing))
     except OSError:
         pass
 

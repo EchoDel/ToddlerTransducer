@@ -25,6 +25,8 @@
       .player-icon-btn svg { width: 22px; height: 22px; fill: #0e0e0e; }
       .player-icon-btn.loop-active { background: #0e0e0e; }
       .player-icon-btn.loop-active svg { color: #fff; }
+      .player-icon-btn.puck-locked { background: #8b0000; }
+      .player-icon-btn.puck-locked svg { color: #fff; }
       .volume-wrap { display: flex; align-items: center; gap: 6px; width: 120px; }
       .volume-wrap input[type=range] { flex: 1; }
     </style>
@@ -75,6 +77,13 @@
                                 <path d="M7 22l-4-4 4-4" fill="none" stroke="currentColor" stroke-width="2"/>
                                 <path d="M7 6h10a4 4 0 0 1 4 4v2" fill="none" stroke="currentColor" stroke-width="2"/>
                                 <path d="M17 18H7a4 4 0 0 1-4-4v-2" fill="none" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                        </button>
+
+                        <button class="player-icon-btn" id="puckLockoutBtn" title="Toggle Puck Lockout">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M7 8a5 5 0 0 1 10 0v4l2 7H5l2-7V8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                                <circle cx="12" cy="15" r="1.5" fill="currentColor"/>
                             </svg>
                         </button>
 

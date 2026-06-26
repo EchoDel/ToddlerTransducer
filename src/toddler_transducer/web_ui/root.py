@@ -12,9 +12,9 @@ from flask import render_template, request, redirect, session, Flask, send_from_
 from werkzeug.utils import secure_filename
 
 from toddler_transducer.audio_file_manager import get_current_files, backup_audio_files, get_sorted_backup_item
-from toddler_transducer.audio import seconds_to_mmss, save_volume
+from toddler_transducer.audio import seconds_to_mmss, save_volume, save_puck_lockout
 from toddler_transducer.config import AUDIO_FILE_BASE_PATH
-from toddler_transducer.metadata import append_to_metadata, load_metadata
+from toddler_transducer.metadata import append_to_metadata, load_metadata, remove_from_metadata_by_track_name
 
 
 def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_manager: DictProxy):
@@ -112,19 +112,6 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
 
         return redirect(request.referrer)
 
-    @flask_app.route('/api/player_state')
-    def api_player_state():
-        current_track_uuid = vlc_playback_manager['current_playing_track_uuid']
-        track_name = resolve_track_name(current_track_uuid)
-        return {
-            'is_playing': vlc_playback_manager['is_playing'],
-            'is_looping': vlc_playback_manager['is_looping'],
-            'track_name': track_name,
-            'track_length': vlc_playback_manager['track_length'],
-            'track_time': vlc_playback_manager['track_time_through'],
-            'volume': vlc_playback_manager.get('volume', 50),
-        }
-
     @flask_app.route('/api/seek', methods=['POST'])
     def api_seek():
         data = request.get_json()
@@ -140,6 +127,33 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
             vlc_playback_manager['volume'] = vol
             save_volume(vol)
         return {'ok': True}
+
+    @flask_app.route('/api/puck_lockout', methods=['GET'])
+    def api_get_puck_lockout():
+        return {'puck_lockout': vlc_playback_manager.get('puck_lockout', False)}
+
+    @flask_app.route('/api/puck_lockout', methods=['POST'])
+    def api_set_puck_lockout():
+        data = request.get_json()
+        if data and 'puck_lockout' in data:
+            locked = bool(data['puck_lockout'])
+            vlc_playback_manager['puck_lockout'] = locked
+            save_puck_lockout(locked)
+        return {'ok': True}
+
+    @flask_app.route('/api/player_state')
+    def api_player_state():
+        current_track_uuid = vlc_playback_manager['current_playing_track_uuid']
+        track_name = resolve_track_name(current_track_uuid)
+        return {
+            'is_playing': vlc_playback_manager['is_playing'],
+            'is_looping': vlc_playback_manager['is_looping'],
+            'track_name': track_name,
+            'track_length': vlc_playback_manager['track_length'],
+            'track_time': vlc_playback_manager['track_time_through'],
+            'volume': vlc_playback_manager.get('volume', 50),
+            'puck_lockout': vlc_playback_manager.get('puck_lockout', False),
+        }
 
     @flask_app.route('/api/play_track', methods=['POST'])
     def api_play_track():
@@ -168,7 +182,29 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
     @flask_app.route('/api/tracks')
     def api_tracks():
         playable_tracks = get_current_files()
-        return {'tracks': list(playable_tracks.keys())}
+        meta = load_metadata()
+        entries = []
+        for name, filename in playable_tracks.items():
+            for uuid, entry in meta.items():
+                if entry.get('file_name') == filename:
+                    entries.append({'uuid': uuid, 'track_name': name})
+                    break
+        return {'tracks': entries}
+
+    @flask_app.route('/api/delete_track', methods=['POST'])
+    def api_delete_track():
+        data = request.get_json()
+        if data and 'track_name' in data:
+            removed = remove_from_metadata_by_track_name(data['track_name'])
+            if removed:
+                file_path = AUDIO_FILE_BASE_PATH / removed['file_name']
+                if file_path.exists():
+                    file_path.unlink()
+                vlc_playback_manager['play_rfid_id'] = False
+                if vlc_playback_manager.get('current_playing_track_uuid') == removed.get('uuid'):
+                    vlc_playback_manager['do_stop'] = True
+                return {'ok': True}
+        return {'ok': False}, 400
 
     @flask_app.route('/loop_track', methods=['POST'])
     def loop_track():
