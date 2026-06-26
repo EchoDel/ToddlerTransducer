@@ -5,9 +5,9 @@ name: Python package
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main" , "develop" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main" , "develop" ]
 
 jobs:
   build:
@@ -28,6 +28,9 @@ jobs:
       uses: abatilo/actions-poetry@v3
       with:
           poetry-version: main
+    - name: Install VLC
+      run: |
+        sudo apt-get update && sudo apt-get install -y vlc
     - name: Install Packages
       run: |
         poetry install --with dev
