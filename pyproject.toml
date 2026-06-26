@@ -31,6 +31,18 @@ isort = "^6.0.1"
 mypy = "^1.18.2"
 pylint = "^3.3.8"
 pytest = "8.4.2"
+pytest-cov = "^6.1.1"
+
+[tool.pytest.ini_options]
+addopts = "--cov --cov-report=html"
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["src/toddler_transducer/proxies/*"]
+
+[tool.coverage.html]
+directory = "coverage_html_report"
+
 
 
 [tool.poetry.group.deployment.dependencies]

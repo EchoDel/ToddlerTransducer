@@ -106,6 +106,47 @@ class TestApiRoutes:
         assert vlc_manager['toggle_looping'] is True
 
 
+class TestApiDeleteTrack:
+    def test_delete_existing_track(self, client, vlc_manager, tmp_audio_root: Path):
+        resp = client.post('/api/delete_track', json={'track_name': 'Test Track 1'})
+        assert resp.status_code == 200
+        assert resp.json == {'ok': True}
+        assert not (tmp_audio_root / 'abc-123.ogg').exists()
+        from toddler_transducer.metadata import load_metadata
+        assert 'abc-123' not in load_metadata()
+
+    def test_delete_nonexistent_track(self, client):
+        resp = client.post('/api/delete_track', json={'track_name': 'No Such Track'})
+        assert resp.status_code == 400
+        assert resp.json == {'ok': False}
+
+    def test_delete_stops_playing_track(self, client, vlc_manager):
+        vlc_manager['current_playing_track_uuid'] = 'abc-123'
+        resp = client.post('/api/delete_track', json={'track_name': 'Test Track 1'})
+        assert resp.status_code == 200
+        assert vlc_manager['do_stop'] is True
+
+    def test_delete_without_body(self, client):
+        resp = client.post('/api/delete_track', json={})
+        assert resp.status_code == 400
+        assert resp.json == {'ok': False}
+
+
+class TestBackupAudio:
+    def test_download_latest_backup(self, client, tmp_path, monkeypatch):
+        backup_root = tmp_path / 'backups'
+        backup_root.mkdir(parents=True, exist_ok=True)
+        monkeypatch.setattr('toddler_transducer.audio_file_manager.BACKUP_FILE_BASE_PATH', backup_root)
+        monkeypatch.setattr('toddler_transducer.web_ui.root.get_sorted_backup_item', lambda _: {
+            'key': str(tmp_path / 'backups' / 'backup_latest.zip'),
+        })
+        backup_zip = backup_root / 'backup_latest.zip'
+        backup_zip.write_text('fake-zip-content')
+        resp = client.get('/backup_audio')
+        assert resp.status_code == 200
+        assert resp.data == b'fake-zip-content'
+
+
 class TestUploadFlow:
     def test_upload_with_session_and_file(self, client, rfid_tag_proxy, tmp_audio_root: Path,
                                            monkeypatch: pytest.MonkeyPatch):

@@ -71,6 +71,7 @@ def patch_config(tmp_audio_root: Path, tmp_path: Path, monkeypatch: pytest.Monke
     monkeypatch.setattr('toddler_transducer.audio.VOLUME_FILE_PATH', tmp_path / 'persistent_settings.json')
     monkeypatch.setattr('toddler_transducer.audio_file_manager.AUDIO_FILE_BASE_PATH', tmp_audio_root)
     monkeypatch.setattr('toddler_transducer.audio_file_manager.BACKUP_FILE_BASE_PATH', tmp_path / 'backups')
+    monkeypatch.setattr('toddler_transducer.web_ui.root.AUDIO_FILE_BASE_PATH', tmp_audio_root)
     (tmp_path / 'backups').mkdir(parents=True, exist_ok=True)
     yield
 

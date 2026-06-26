@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from toddler_transducer.metadata import load_metadata, save_metadata, append_to_metadata, METADATA
+from toddler_transducer.metadata import load_metadata, save_metadata, append_to_metadata, remove_from_metadata, remove_from_metadata_by_track_name, METADATA
 
 
 class TestLoadMetadata:
@@ -52,6 +52,30 @@ class TestAppendToMetadata:
         append_to_metadata('abc-123', 'new.ogg', 9999, 'Duplicate UUID')
         meta = load_metadata()
         assert meta['abc-123']['rfid_id'] == 9999
+
+
+class TestRemoveFromMetadata:
+    def test_remove_existing_uuid(self, tmp_audio_root: Path):
+        removed = remove_from_metadata('abc-123')
+        assert removed == {'file_name': 'abc-123.ogg', 'rfid_id': 1001, 'track_name': 'Test Track 1'}
+        meta = load_metadata()
+        assert 'abc-123' not in meta
+
+    def test_remove_nonexistent_uuid(self, tmp_audio_root: Path):
+        removed = remove_from_metadata('nonexistent')
+        assert removed is None
+
+    def test_remove_by_track_name(self, tmp_audio_root: Path):
+        removed = remove_from_metadata_by_track_name('Test Track 2')
+        assert removed is not None
+        assert removed['track_name'] == 'Test Track 2'
+        assert 'uuid' in removed
+        meta = load_metadata()
+        assert 'def-456' not in meta
+
+    def test_remove_by_track_name_not_found(self, tmp_audio_root: Path):
+        removed = remove_from_metadata_by_track_name('No Such Track')
+        assert removed is None
 
 
 class TestMetadataConstant:
