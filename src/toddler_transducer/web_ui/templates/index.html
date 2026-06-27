@@ -101,7 +101,10 @@
                         <input type="text" class="form-control form-control-sm mb-2" id="trackFilter" placeholder="Filter tracks..." oninput="filterTrackList()">
                         <div class="list-group" id="trackListGroup">
                             {% for track in playable_tracks %}
-                            <button type="button" class="list-group-item list-group-item-action py-1" data-track="{{track}}">{{track}}</button>
+                            <div class="list-group-item list-group-item-action py-1 d-flex align-items-center" style="cursor:default">
+                                <button type="button" class="flex-grow-1 text-start bg-transparent border-0 py-1" data-track="{{track}}">{{track}}</button>
+                                <button type="button" class="btn btn-sm btn-outline-danger border-0 py-0 px-1 delete-track-btn" data-track="{{track}}" title="Delete">✕</button>
+                            </div>
                             {% endfor %}
                         </div>
                     </div>
