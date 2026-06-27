@@ -285,10 +285,33 @@
     }
   });
 
+  // ── Disk usage ────────────────────────────────────────
+
+  function formatBytes(bytes) {
+    if (bytes === 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + units[i];
+  }
+
+  async function fetchDiskUsage() {
+    const data = await fetchJSON('/api/disk_usage');
+    if (!data) return;
+    const pct = ((data.used / data.total) * 100).toFixed(1);
+    document.getElementById('diskUsage').innerHTML =
+      `<p><strong>Free:</strong> ${formatBytes(data.free)}</p>
+       <p><strong>Used:</strong> ${formatBytes(data.used)} / ${formatBytes(data.total)} (${pct}%)</p>
+       <div class="progress" style="height:8px;">
+         <div class="progress-bar bg-dark" style="width:${pct}%"></div>
+       </div>`;
+  }
+
   // ── Init ──────────────────────────────────────────────
 
   fetchTrackList();
   pollState();
+  fetchDiskUsage();
   setInterval(pollState, 1000);
   setInterval(fetchTrackList, 10000);
+  setInterval(fetchDiskUsage, 30000);
 })();

@@ -6,6 +6,7 @@ Module containing all of the routes for the root page of the application.
 from multiprocessing import Process
 from multiprocessing.managers import ValueProxy, DictProxy
 from pathlib import Path
+from shutil import disk_usage
 from uuid import uuid1
 
 from flask import render_template, request, redirect, session, Flask, send_from_directory
@@ -190,6 +191,15 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
                     entries.append({'uuid': uuid, 'track_name': name})
                     break
         return {'tracks': entries}
+
+    @flask_app.route('/api/disk_usage')
+    def api_disk_usage():
+        usage = disk_usage(AUDIO_FILE_BASE_PATH)
+        return {
+            'total': usage.total,
+            'used': usage.used,
+            'free': usage.free,
+        }
 
     @flask_app.route('/api/delete_track', methods=['POST'])
     def api_delete_track():
