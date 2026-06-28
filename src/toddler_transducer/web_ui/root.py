@@ -3,6 +3,8 @@ Web UI Root
 
 Module containing all of the routes for the root page of the application.
 """
+import subprocess
+import sys
 from multiprocessing import Process
 from multiprocessing.managers import ValueProxy, DictProxy
 from pathlib import Path
@@ -228,3 +230,15 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
         backup_location = Path(__file__).parents[3] / backup_location
         # https://stackoverflow.com/questions/24577349/flask-download-a-file
         return send_from_directory(backup_location.parent, backup_location.name)
+
+    @flask_app.route('/api/restart_service', methods=['POST'])
+    def api_restart_service():
+        try:
+            subprocess.Popen(
+                ['sudo', 'systemctl', 'restart', 'ToddlerTransducer.service'],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            return {'ok': True}
+        except Exception:
+            return {'ok': False}, 500

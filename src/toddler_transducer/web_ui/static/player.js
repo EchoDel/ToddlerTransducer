@@ -306,6 +306,18 @@
        </div>`;
   }
 
+  // ── Restart Service ────────────────────────────────────
+
+  els.restartBtn = $('#restartBtn');
+  if (els.restartBtn) {
+    els.restartBtn.addEventListener('click', async () => {
+      if (!confirm('Restart the application service? This will interrupt playback.')) return;
+      els.restartBtn.disabled = true;
+      els.restartBtn.textContent = 'Restarting...';
+      await postJSON('/api/restart_service');
+    });
+  }
+
   // ── Init ──────────────────────────────────────────────
 
   fetchTrackList();
