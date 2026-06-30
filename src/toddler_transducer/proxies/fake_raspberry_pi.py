@@ -132,7 +132,7 @@ class _GPIO(Base):
 
     @printf
     def input(self, channel):
-        if channel in self._inputs and self._inputs[channel] is not None:
+        if 0 <= channel < len(self._inputs) and self._inputs[channel] is not None:
             return self._inputs[channel]
         if RANDOMIZE_INPUT:
             return randint(0, 1)
