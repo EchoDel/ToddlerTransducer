@@ -133,6 +133,13 @@ legend {
     min-width: 160px;
 }
 
+.control-group label.checkbox-label {
+    flex: 0;
+    min-width: auto;
+    font-weight: 400;
+    white-space: nowrap;
+}
+
 .control-group input[type="range"] {
     flex: 2;
     accent-color: var(--primary);
@@ -184,6 +191,34 @@ select:focus, input:focus {
     margin-top: 12px;
     padding-top: 12px;
     border-top: 1px solid var(--border);
+}
+
+.hint-text {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.progress-bar-track {
+    width: 100%;
+    height: 8px;
+    background: var(--surface-2);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 8px 0 4px;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), #7c4dff);
+    border-radius: 4px;
+    transition: width 0.4s ease;
+}
+
+.progress-label {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-align: center;
 }
 
 .upload-status {

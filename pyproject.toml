@@ -12,7 +12,16 @@ dependencies = [
     "flask",
     "mfrc522;  platform_machine == 'aarch64'",
     "RPi.GPIO;  platform_machine == 'aarch64'",
-    "spidev;  platform_machine == 'aarch64'"
+    "spidev;  platform_machine == 'aarch64'",
+    "trimesh",
+    "numpy-stl",
+    "freetype-py",
+    "shapely",
+    "mapbox-earcut",
+    "networkx",
+    "lxml",
+    "scipy",
+    "manifold3d",
 ]
 
 [tool.pylint.main]
@@ -45,6 +54,7 @@ directory = "coverage_html_report"
 
 
 
+
 [tool.poetry.group.deployment.dependencies]
 waitress = "^3.0.2"
 
@@ -56,3 +66,4 @@ build-backend = "poetry.core.masonry.api"
 launch_toddler_transducer_web_app = "toddler_transducer.web_ui.launch:launch_toddler_transducer_web_app"
 launch_dev_toddler_transducer_web_app = "toddler_transducer.web_ui.launch:launch_dev_toddler_transducer_web_app"
 launch_toddler_transducer = "toddler_transducer.__main__:main"
+launch_puck_designer = "toddler_transducer.puck_designer.launch:main"

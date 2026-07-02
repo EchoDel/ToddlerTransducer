@@ -1,5 +1,6 @@
 import math
 import os
+import sys
 import tempfile
 from pathlib import Path
 from typing import Optional
@@ -274,14 +275,32 @@ def _combine_meshes(mesh_a, mesh_b):
         return trimesh.util.concatenate([mesh_a, mesh_b])
 
 
-def merge_stl(base_mesh, stl_path):
-    uploaded = trimesh.load(str(stl_path), force="mesh")
+def merge_stl(base_mesh, mesh_path, offset_x=0.0, offset_y=0.0, offset_z=0.0, rotation_z=0.0,
+              flip_x=False, flip_y=False, flip_z=False, scale=1.0):
+    uploaded = trimesh.load(str(mesh_path), force="mesh")
     if uploaded.is_watertight is False:
         uploaded.fix_normals()
+
+    if scale != 1.0:
+        uploaded.vertices *= scale
+
+    if flip_x:
+        uploaded.vertices[:, 0] *= -1
+    if flip_y:
+        uploaded.vertices[:, 1] *= -1
+    if flip_z:
+        uploaded.vertices[:, 2] *= -1
+
+    if rotation_z != 0.0:
+        angle = math.radians(rotation_z)
+        rot = trimesh.transformations.rotation_matrix(angle, [0, 0, 1])
+        uploaded.apply_transform(rot)
+
     uploaded.vertices -= uploaded.center_mass
+    uploaded.apply_translation([offset_x, offset_y, 0])
 
     base_thickness = base_mesh.bounds[1][2] - base_mesh.bounds[0][2]
-    uploaded.apply_translation([0, 0, base_thickness / 2 + uploaded.bounds[1][2] - uploaded.bounds[0][2]])
+    uploaded.apply_translation([0, 0, base_thickness / 2 + uploaded.bounds[1][2] - uploaded.bounds[0][2] + offset_z])
 
     return _combine_meshes(base_mesh, uploaded)
 
@@ -302,10 +321,14 @@ def generate_puck(base_diameter=DEFAULT_BASE_DIAMETER, base_thickness=DEFAULT_BA
                   hole_height=DEFAULT_HOLE_HEIGHT,
                   hole_bottom_offset=DEFAULT_HOLE_BOTTOM_OFFSET, top_type="none",
                   top_params=None, text_content="", font_size=48, text_height=5,
-                  uploaded_stl_path=None):
+                  uploaded_stl_path=None, ai_image_path=None,
+                        ai_offset_x=0.0, ai_offset_y=0.0, ai_offset_z=0.0, ai_rotation_z=0.0,
+                  ai_flip_x=False, ai_flip_y=False, ai_flip_z=False,
+                  ai_scale=10.0):
     if top_params is None:
         top_params = {}
 
+    ai_mesh_path = None
     mesh = create_base(diameter=base_diameter, thickness=base_thickness, hole_diameter=hole_diameter,
                        hole_height=hole_height,
                        hole_bottom_offset=hole_bottom_offset)
@@ -316,8 +339,15 @@ def generate_puck(base_diameter=DEFAULT_BASE_DIAMETER, base_thickness=DEFAULT_BA
         mesh = add_shape(mesh, top_params.get("shape_type", "cube"), top_params)
     elif top_type == "upload" and uploaded_stl_path:
         mesh = merge_stl(mesh, uploaded_stl_path)
+    elif top_type == "ai_model" and ai_image_path:
+        sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "vendor" / "nvdiffrast_stub"))
+        from .inference_instant_mesh import generate_mesh_from_image
+        ai_mesh_path = generate_mesh_from_image(ai_image_path, diffusion_steps=64)
+        mesh = merge_stl(mesh, str(ai_mesh_path), offset_x=ai_offset_x, offset_y=ai_offset_y,
+                         offset_z=ai_offset_z, rotation_z=ai_rotation_z, flip_x=ai_flip_x,
+                         flip_y=ai_flip_y, flip_z=ai_flip_z, scale=ai_scale)
 
-    return mesh
+    return mesh, ai_mesh_path
 
 
 def export_stl(mesh, filepath):
@@ -333,14 +363,17 @@ def generate_and_export(base_diameter=DEFAULT_BASE_DIAMETER, base_thickness=DEFA
                         hole_height=DEFAULT_HOLE_HEIGHT,
                         hole_bottom_offset=DEFAULT_HOLE_BOTTOM_OFFSET, top_type="none",
                         top_params=None, text_content="", font_size=48, text_height=5,
-                        uploaded_stl_path=None, output_dir=None):
+                        uploaded_stl_path=None, ai_image_path=None,
+                  ai_offset_x=0.0, ai_offset_y=0.0, ai_offset_z=0.0, ai_rotation_z=0.0,
+                        ai_flip_x=False, ai_flip_y=False, ai_flip_z=False,
+                        ai_scale=10.0, output_dir=None):
     if output_dir is None:
         output_dir = Path(tempfile.mkdtemp(prefix="puck_designer_"))
 
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    mesh = generate_puck(
+    mesh, ai_mesh_path = generate_puck(
         base_diameter=base_diameter,
         base_thickness=base_thickness,
         hole_diameter=hole_diameter,
@@ -352,12 +385,27 @@ def generate_and_export(base_diameter=DEFAULT_BASE_DIAMETER, base_thickness=DEFA
         font_size=font_size,
         text_height=text_height,
         uploaded_stl_path=uploaded_stl_path,
+        ai_image_path=ai_image_path,
+        ai_offset_x=ai_offset_x,
+        ai_offset_y=ai_offset_y,
+        ai_offset_z=ai_offset_z,
+        ai_rotation_z=ai_rotation_z,
+        ai_flip_x=ai_flip_x,
+        ai_flip_y=ai_flip_y,
+        ai_flip_z=ai_flip_z,
+        ai_scale=ai_scale,
     )
 
     stl_path = output_dir / "puck.stl"
     _3mf_path = output_dir / "puck.3mf"
+    ai_stl_path = None
 
     export_stl(mesh, stl_path)
     export_3mf(mesh, _3mf_path)
 
-    return mesh, stl_path, _3mf_path
+    if top_type == "ai_model" and ai_mesh_path:
+        ai_stl_path = output_dir / "ai_model.stl"
+        ai_mesh = trimesh.load(str(ai_mesh_path), force="mesh")
+        export_stl(ai_mesh, ai_stl_path)
+
+    return mesh, stl_path, _3mf_path, ai_stl_path

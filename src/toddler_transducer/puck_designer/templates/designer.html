@@ -60,6 +60,7 @@
                         <option value="shape" selected>Shape</option>
                         <option value="text">Text</option>
                         <option value="upload">Upload STL</option>
+                        <option value="ai_model">AI Image → 3D</option>
                     </select>
                 </div>
 
@@ -111,6 +112,58 @@
                         <input type="file" id="stl_file" accept=".stl,.stla,.stlb,.3mf,.obj">
                     </div>
                     <div id="upload-status" class="upload-status"></div>
+                </div>
+
+                <div id="ai-image-options" class="option-group" style="display:none">
+                    <div class="control-group">
+                        <label for="ai_image_file">Upload Image</label>
+                        <input type="file" id="ai_image_file" accept=".png,.jpg,.jpeg,.webp">
+                    </div>
+                    <div class="control-group">
+                        <label>AI Model</label>
+                        <span class="hint-text">Generates a 3D mesh from your image using InstantMesh. Processing may take 1-2 minutes.</span>
+                    </div>
+                    <div id="ai-image-status" class="upload-status"></div>
+
+                    <div class="control-group">
+                        <label for="ai_offset_x">Position X (mm)</label>
+                        <input type="range" id="ai_offset_x" min="-20" max="20" value="0" step="0.5">
+                        <span id="ai_offset_x_val">0</span>
+                    </div>
+                    <div class="control-group">
+                        <label for="ai_offset_y">Position Y (mm)</label>
+                        <input type="range" id="ai_offset_y" min="-20" max="20" value="0" step="0.5">
+                        <span id="ai_offset_y_val">0</span>
+                    </div>
+                    <div class="control-group">
+                        <label for="ai_offset_z">Position Z (mm)</label>
+                        <input type="range" id="ai_offset_z" min="-10" max="10" value="0" step="0.5">
+                        <span id="ai_offset_z_val">0</span>
+                    </div>
+                    <div class="control-group">
+                        <label for="ai_rotation_z">Rotation (°)</label>
+                        <input type="range" id="ai_rotation_z" min="0" max="360" value="0" step="1">
+                        <span id="ai_rotation_z_val">0</span>
+                    </div>
+                    <div class="control-group">
+                        <label for="ai_scale">Scale</label>
+                        <input type="range" id="ai_scale" min="1" max="50" value="10" step="0.5">
+                        <span id="ai_scale_val">10</span>
+                    </div>
+                    <div class="control-group">
+                        <label>Mirror</label>
+                        <div style="display:flex;gap:4px">
+                            <label class="checkbox-label"><input type="checkbox" id="ai_flip_x"> X</label>
+                            <label class="checkbox-label"><input type="checkbox" id="ai_flip_y"> Y</label>
+                            <label class="checkbox-label"><input type="checkbox" id="ai_flip_z"> Z</label>
+                        </div>
+                    </div>
+                    <div id="ai-progress-area" style="display:none">
+                        <div class="progress-bar-track">
+                            <div id="ai-progress-fill" class="progress-bar-fill" style="width:0%"></div>
+                        </div>
+                        <div id="ai-progress-label" class="progress-label">Starting...</div>
+                    </div>
                 </div>
             </fieldset>
 

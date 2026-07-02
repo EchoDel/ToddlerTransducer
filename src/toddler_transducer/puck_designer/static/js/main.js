@@ -2,12 +2,17 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 
 let scene, camera, renderer, controls;
 let puckGroup = null;
 let font = null;
 let pendingUpdate = null;
 let uploadPath = null;
+let aiImagePath = null;
+let aiImageDataUrl = null;
+let aiMeshGeo = null;
+let aiMeshMaterial = null;
 
 const FONT_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/fonts/helvetiker_regular.typeface.json';
 
@@ -229,6 +234,70 @@ function createPreviewMesh() {
         const labelSprite = makeTextSprite('STL loaded');
         labelSprite.position.y = halfThick + 15;
         group.add(labelSprite);
+    } else if (topType === 'ai_model') {
+        if (aiMeshGeo) {
+            const geo = aiMeshGeo.clone();
+            const mesh = new THREE.Mesh(geo, aiMeshMaterial || new THREE.MeshPhysicalMaterial({
+                color: 0xe67e22,
+                metalness: 0.3,
+                roughness: 0.3,
+            }));
+            mesh.castShadow = true;
+
+            const scale = parseFloat(document.getElementById('ai_scale').value);
+            const fx = document.getElementById('ai_flip_x').checked;
+            const fy = document.getElementById('ai_flip_y').checked;
+            const fz = document.getElementById('ai_flip_z').checked;
+            const rot = parseFloat(document.getElementById('ai_rotation_z').value);
+
+            mesh.scale.set(scale * (fx ? -1 : 1), scale * (fy ? -1 : 1), scale * (fz ? -1 : 1));
+            mesh.rotation.y = rot * Math.PI / 180;
+
+            const bbox = new THREE.Box3().setFromObject(mesh);
+            const halfH = (bbox.max.y - bbox.min.y) / 2;
+            const ox = parseFloat(document.getElementById('ai_offset_x').value);
+            const oy = parseFloat(document.getElementById('ai_offset_y').value);
+            const oz = parseFloat(document.getElementById('ai_offset_z').value);
+            mesh.position.set(ox, halfThick + halfH + oz, oy);
+
+            group.add(mesh);
+        } else if (aiImageDataUrl) {
+            const img = new Image();
+            img.src = aiImageDataUrl;
+            const aspect = img.naturalWidth / img.naturalHeight || 1;
+            const planeW = 20;
+            const planeH = planeW / aspect;
+            const texture = new THREE.Texture(img);
+            texture.needsUpdate = true;
+            const planeGeo = new THREE.PlaneGeometry(planeW, planeH);
+            const planeMat = new THREE.MeshBasicMaterial({
+                map: texture,
+                side: THREE.DoubleSide,
+                transparent: true,
+                depthWrite: false,
+            });
+            const plane = new THREE.Mesh(planeGeo, planeMat);
+            plane.position.y = halfThick + 0.1;
+            group.add(plane);
+
+            const borderMat = new THREE.MeshBasicMaterial({
+                color: 0x9b59b6,
+                wireframe: false,
+                transparent: true,
+                opacity: 0.3,
+                side: THREE.DoubleSide,
+            });
+            const border = new THREE.Mesh(
+                new THREE.PlaneGeometry(planeW + 0.5, planeH + 0.5),
+                borderMat
+            );
+            border.position.y = halfThick + 0.05;
+            group.add(border);
+
+            const label = makeTextSprite('AI: image loaded');
+            label.position.y = halfThick + Math.max(planeH, 10) / 2 + 3;
+            group.add(label);
+        }
     }
 
     return group;
@@ -321,6 +390,11 @@ const sliderConfig = [
     { id: 'shape_height', valId: 'shape_height_val', decimals: 0 },
     { id: 'text_height', valId: 'text_height_val', decimals: 1 },
     { id: 'font_size', valId: 'font_size_val', decimals: 0 },
+    { id: 'ai_offset_x', valId: 'ai_offset_x_val', decimals: 1 },
+    { id: 'ai_offset_y', valId: 'ai_offset_y_val', decimals: 1 },
+    { id: 'ai_offset_z', valId: 'ai_offset_z_val', decimals: 1 },
+    { id: 'ai_rotation_z', valId: 'ai_rotation_z_val', decimals: 0 },
+    { id: 'ai_scale', valId: 'ai_scale_val', decimals: 1 },
 ];
 
 function bindControls() {
@@ -335,12 +409,16 @@ function bindControls() {
 
     document.getElementById('text_content').addEventListener('input', updatePreview);
     document.getElementById('shape_type').addEventListener('change', updatePreview);
+    document.getElementById('ai_flip_x').addEventListener('change', updatePreview);
+    document.getElementById('ai_flip_y').addEventListener('change', updatePreview);
+    document.getElementById('ai_flip_z').addEventListener('change', updatePreview);
 
     document.getElementById('top_type').addEventListener('change', () => {
         const val = document.getElementById('top_type').value;
         document.getElementById('shape-options').style.display = val === 'shape' ? '' : 'none';
         document.getElementById('text-options').style.display = val === 'text' ? '' : 'none';
         document.getElementById('upload-options').style.display = val === 'upload' ? '' : 'none';
+        document.getElementById('ai-image-options').style.display = val === 'ai_model' ? '' : 'none';
         updatePreview();
     });
 
@@ -364,17 +442,103 @@ function bindControls() {
         }
     });
 
+    document.getElementById('ai_image_file').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            aiImageDataUrl = ev.target.result;
+            updatePreview();
+        };
+        reader.readAsDataURL(file);
+
+        const formData = new FormData();
+        formData.append('image_file', file);
+        try {
+            const resp = await fetch('/api/upload_image', { method: 'POST', body: formData });
+            const data = await resp.json();
+            if (data.upload_path) {
+                aiImagePath = data.upload_path;
+                document.getElementById('ai-image-status').textContent = `Loaded: ${file.name}`;
+                document.getElementById('ai-image-status').className = 'upload-status success';
+            }
+        } catch (err) {
+            document.getElementById('ai-image-status').textContent = 'Upload failed';
+            document.getElementById('ai-image-status').className = 'upload-status error';
+        }
+    });
+
     document.getElementById('btn-generate').addEventListener('click', generateAndDownload);
 }
 
+function showAiProgress(show) {
+    const area = document.getElementById('ai-progress-area');
+    area.style.display = show ? '' : 'none';
+}
+
+function setAiProgress(pct, label) {
+    const fill = document.getElementById('ai-progress-fill');
+    const lbl = document.getElementById('ai-progress-label');
+    fill.style.width = Math.min(pct, 100) + '%';
+    if (label) lbl.textContent = label;
+}
+
+const AI_PROGRESS_STAGES = [
+    { at: 5, label: 'Loading AI models...' },
+    { at: 15, label: 'Analyzing image...' },
+    { at: 30, label: 'Generating multi-views...' },
+    { at: 50, label: 'Reconstructing 3D mesh...' },
+    { at: 70, label: 'Refining geometry...' },
+    { at: 85, label: 'Making watertight...' },
+    { at: 93, label: 'Merging with puck base...' },
+    { at: 98, label: 'Exporting...' },
+];
+
 async function generateAndDownload() {
     const btn = document.getElementById('btn-generate');
+    const isAi = document.getElementById('top_type').value === 'ai_model';
+
     btn.textContent = 'Generating...';
     btn.disabled = true;
+
+    if (isAi) {
+        showAiProgress(true);
+        setAiProgress(0, 'Starting...');
+    }
 
     const params = readFormParams();
     if (params.top_type === 'upload') {
         params.uploaded_stl_path = uploadPath;
+    } else if (params.top_type === 'ai_model') {
+        params.ai_image_path = aiImagePath;
+        params.ai_offset_x = parseFloat(document.getElementById('ai_offset_x').value);
+        params.ai_offset_y = parseFloat(document.getElementById('ai_offset_y').value);
+        params.ai_offset_z = parseFloat(document.getElementById('ai_offset_z').value);
+        params.ai_rotation_z = parseFloat(document.getElementById('ai_rotation_z').value);
+        params.ai_flip_x = document.getElementById('ai_flip_x').checked;
+        params.ai_flip_y = document.getElementById('ai_flip_y').checked;
+        params.ai_flip_z = document.getElementById('ai_flip_z').checked;
+        params.ai_scale = parseFloat(document.getElementById('ai_scale').value);
+    }
+
+    let progressCancel = null;
+    if (isAi) {
+        let stageIdx = 0;
+        let pct = 0;
+        const tick = () => {
+            if (stageIdx < AI_PROGRESS_STAGES.length && pct >= AI_PROGRESS_STAGES[stageIdx].at) {
+                setAiProgress(pct, AI_PROGRESS_STAGES[stageIdx].label);
+                stageIdx++;
+            }
+            setAiProgress(pct, null);
+            if (pct < 92) {
+                const inc = pct < 30 ? 1.5 : pct < 60 ? 0.8 : 0.3;
+                pct = Math.min(pct + inc, 92);
+                progressCancel = setTimeout(tick, 800);
+            }
+        };
+        tick();
     }
 
     try {
@@ -385,15 +549,60 @@ async function generateAndDownload() {
         });
         const data = await resp.json();
         if (data.error) {
+            if (isAi) {
+                setAiProgress(0, 'Error: ' + data.error);
+                setTimeout(() => showAiProgress(false), 3000);
+            }
             alert('Error: ' + data.error);
             return;
+        }
+
+        if (isAi) {
+            if (progressCancel) clearTimeout(progressCancel);
+            setAiProgress(100, 'Complete!');
+            setTimeout(() => showAiProgress(false), 2000);
         }
 
         document.getElementById('download-stl').href = data.stl_url;
         document.getElementById('download-3mf').href = data['3mf_url'];
         document.getElementById('download-links').style.display = 'flex';
         document.getElementById('preview-status').textContent = 'Generation complete!';
+
+        if (data.ai_stl_url) {
+            const aiLink = document.getElementById('download-ai-stl') || (() => {
+                const a = document.createElement('a');
+                a.id = 'download-ai-stl';
+                a.className = 'btn btn-secondary';
+                a.download = 'ai_model.stl';
+                a.textContent = 'Download AI Model Only';
+                document.getElementById('download-links').appendChild(a);
+                return a;
+            })();
+            aiLink.href = data.ai_stl_url;
+            aiLink.style.display = '';
+        }
+
+        if (params.top_type === 'ai_model') {
+            try {
+                const loader = new STLLoader();
+                const geo = await loader.loadAsync(data.ai_stl_url || data.stl_url);
+                geo.rotateX(-Math.PI / 2);
+                aiMeshGeo = geo;
+                aiMeshMaterial = new THREE.MeshPhysicalMaterial({
+                    color: 0xe67e22,
+                    metalness: 0.3,
+                    roughness: 0.3,
+                });
+                updatePreview();
+            } catch (stlErr) {
+                console.warn('Could not load STL preview:', stlErr);
+            }
+        }
     } catch (err) {
+        if (isAi) {
+            setAiProgress(0, 'Network error');
+            setTimeout(() => showAiProgress(false), 3000);
+        }
         alert('Network error: ' + err.message);
     } finally {
         btn.textContent = 'Generate & Download';

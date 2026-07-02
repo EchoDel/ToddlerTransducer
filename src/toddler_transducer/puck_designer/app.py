@@ -39,13 +39,22 @@ def api_generate():
     text_height = float(data.get("text_height", 5))
     shape_type = data.get("shape_type", "cube")
     shape_params = data.get("shape_params", {})
+    ai_image_path = data.get("ai_image_path")
+    ai_offset_x = float(data.get("ai_offset_x", 0))
+    ai_offset_y = float(data.get("ai_offset_y", 0))
+    ai_offset_z = float(data.get("ai_offset_z", 0))
+    ai_rotation_z = float(data.get("ai_rotation_z", 0))
+    ai_flip_x = data.get("ai_flip_x", False)
+    ai_flip_y = data.get("ai_flip_y", False)
+    ai_flip_z = data.get("ai_flip_z", False)
+    ai_scale = float(data.get("ai_scale", 10.0))
 
     shape_params["shape_type"] = shape_type
 
     job_dir = Path(tempfile.mkdtemp(prefix="puck_job_"))
 
     try:
-        mesh, stl_path, _3mf_path = generator.generate_and_export(
+        result = generator.generate_and_export(
             base_diameter=base_diameter,
             base_thickness=base_thickness,
             hole_diameter=hole_diameter,
@@ -56,20 +65,33 @@ def api_generate():
             text_content=text_content,
             font_size=font_size,
             text_height=text_height,
+            ai_image_path=ai_image_path,
+            ai_offset_x=ai_offset_x,
+            ai_offset_y=ai_offset_y,
+            ai_offset_z=ai_offset_z,
+            ai_rotation_z=ai_rotation_z,
+            ai_flip_x=ai_flip_x,
+            ai_flip_y=ai_flip_y,
+            ai_flip_z=ai_flip_z,
+            ai_scale=ai_scale,
             output_dir=job_dir,
         )
+        mesh, stl_path, _3mf_path, ai_stl_path = result
 
         session_id = str(hash(str(job_dir)))
         session["last_job_dir"] = str(job_dir)
 
-        return jsonify({
+        resp = {
             "stl_url": f"/api/download/{job_dir.name}/puck.stl",
             "3mf_url": f"/api/download/{job_dir.name}/puck.3mf",
             "bounds": {
                 "min": mesh.bounds[0].tolist(),
                 "max": mesh.bounds[1].tolist(),
             },
-        })
+        }
+        if ai_stl_path:
+            resp["ai_stl_url"] = f"/api/download/{job_dir.name}/ai_model.stl"
+        return jsonify(resp)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -102,11 +124,33 @@ def api_upload_stl():
     return jsonify({"upload_path": str(temp_path)})
 
 
+@puck_designer_app.route("/api/upload_image", methods=["POST"])
+def api_upload_image():
+    if "image_file" not in request.files:
+        return jsonify({"error": "No file provided"}), 400
+
+    file = request.files["image_file"]
+    if file.filename == "":
+        return jsonify({"error": "No file selected"}), 400
+
+    suffix = Path(file.filename).suffix
+    if suffix.lower() not in (".png", ".jpg", ".jpeg", ".webp", ".bmp"):
+        return jsonify({"error": f"Unsupported format: {suffix}"}), 400
+
+    temp_path = UPLOAD_DIR / file.filename
+    file.save(str(temp_path))
+
+    return jsonify({"upload_path": str(temp_path)})
+
+
 @puck_designer_app.route("/api/preview_mesh", methods=["POST"])
 def api_preview_mesh():
     data = request.get_json()
     if not data:
         return jsonify({"error": "No JSON data provided"}), 400
+
+    if data.get("top_type") == "ai_model":
+        return jsonify({"error": "Preview not available for AI-generated models"}), 400
 
     base_diameter = float(data.get("base_diameter", generator.DEFAULT_BASE_DIAMETER))
     base_thickness = float(data.get("base_thickness", generator.DEFAULT_BASE_THICKNESS))
