@@ -119,11 +119,20 @@
                         <label for="ai_image_file">Upload Image</label>
                         <input type="file" id="ai_image_file" accept=".png,.jpg,.jpeg,.webp">
                     </div>
+                    <div id="ai-image-status" class="upload-status"></div>
+
                     <div class="control-group">
                         <label>AI Model</label>
                         <span class="hint-text">Generates a 3D mesh from your image using InstantMesh. Processing may take 1-2 minutes.</span>
                     </div>
-                    <div id="ai-image-status" class="upload-status"></div>
+
+                    <button id="btn-generate-ai" class="btn btn-primary" style="display:none">Generate AI Mesh</button>
+                    <div id="ai-progress-area" style="display:none">
+                        <div class="progress-bar-track">
+                            <div id="ai-progress-fill" class="progress-bar-fill" style="width:0%"></div>
+                        </div>
+                        <div id="ai-progress-label" class="progress-label">Starting...</div>
+                    </div>
 
                     <div class="control-group">
                         <label for="ai_offset_x">Position X (mm)</label>
@@ -158,11 +167,11 @@
                             <label class="checkbox-label"><input type="checkbox" id="ai_flip_z"> Z</label>
                         </div>
                     </div>
-                    <div id="ai-progress-area" style="display:none">
-                        <div class="progress-bar-track">
-                            <div id="ai-progress-fill" class="progress-bar-fill" style="width:0%"></div>
-                        </div>
-                        <div id="ai-progress-label" class="progress-label">Starting...</div>
+
+                    <div id="ai-download-links" class="download-links" style="display:none">
+                        <button id="btn-download-ai-stl" class="btn btn-secondary">Download STL</button>
+                        <button id="btn-download-ai-3mf" class="btn btn-secondary">Download 3MF</button>
+                        <a id="download-ai-raw-stl" class="btn btn-secondary" download>Download AI Model Only</a>
                     </div>
                 </div>
             </fieldset>

@@ -13,6 +13,8 @@ let aiImagePath = null;
 let aiImageDataUrl = null;
 let aiMeshGeo = null;
 let aiMeshMaterial = null;
+let aiMeshId = null;
+let aiRawStlUrl = null;
 
 const FONT_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/fonts/helvetiker_regular.typeface.json';
 
@@ -415,10 +417,16 @@ function bindControls() {
 
     document.getElementById('top_type').addEventListener('change', () => {
         const val = document.getElementById('top_type').value;
+        const isAi = val === 'ai_model';
         document.getElementById('shape-options').style.display = val === 'shape' ? '' : 'none';
         document.getElementById('text-options').style.display = val === 'text' ? '' : 'none';
         document.getElementById('upload-options').style.display = val === 'upload' ? '' : 'none';
-        document.getElementById('ai-image-options').style.display = val === 'ai_model' ? '' : 'none';
+        document.getElementById('ai-image-options').style.display = isAi ? '' : 'none';
+        document.getElementById('btn-generate').style.display = isAi ? 'none' : '';
+        document.getElementById('download-links').style.display = 'none';
+        if (!isAi) {
+            document.getElementById('preview-status').textContent = 'Ready';
+        }
         updatePreview();
     });
 
@@ -462,6 +470,7 @@ function bindControls() {
                 aiImagePath = data.upload_path;
                 document.getElementById('ai-image-status').textContent = `Loaded: ${file.name}`;
                 document.getElementById('ai-image-status').className = 'upload-status success';
+                document.getElementById('btn-generate-ai').style.display = '';
             }
         } catch (err) {
             document.getElementById('ai-image-status').textContent = 'Upload failed';
@@ -470,6 +479,9 @@ function bindControls() {
     });
 
     document.getElementById('btn-generate').addEventListener('click', generateAndDownload);
+    document.getElementById('btn-generate-ai').addEventListener('click', generateAiMeshOnly);
+    document.getElementById('btn-download-ai-stl').addEventListener('click', () => exportAiPuck('stl'));
+    document.getElementById('btn-download-ai-3mf').addEventListener('click', () => exportAiPuck('3mf'));
 }
 
 function showAiProgress(show) {
@@ -491,54 +503,142 @@ const AI_PROGRESS_STAGES = [
     { at: 50, label: 'Reconstructing 3D mesh...' },
     { at: 70, label: 'Refining geometry...' },
     { at: 85, label: 'Making watertight...' },
-    { at: 93, label: 'Merging with puck base...' },
-    { at: 98, label: 'Exporting...' },
+    { at: 95, label: 'Finalizing...' },
 ];
 
-async function generateAndDownload() {
-    const btn = document.getElementById('btn-generate');
-    const isAi = document.getElementById('top_type').value === 'ai_model';
+function startAiProgressSimulation() {
+    let stageIdx = 0;
+    let pct = 0;
+    const tick = () => {
+        if (stageIdx < AI_PROGRESS_STAGES.length && pct >= AI_PROGRESS_STAGES[stageIdx].at) {
+            setAiProgress(pct, AI_PROGRESS_STAGES[stageIdx].label);
+            stageIdx++;
+        }
+        setAiProgress(pct, null);
+        if (pct < 92) {
+            const inc = pct < 30 ? 1.5 : pct < 60 ? 0.8 : 0.3;
+            pct = Math.min(pct + inc, 92);
+            return setTimeout(tick, 800);
+        }
+        return null;
+    };
+    return tick();
+}
 
+async function generateAiMeshOnly() {
+    if (!aiImagePath) {
+        alert('Upload an image first.');
+        return;
+    }
+
+    const btn = document.getElementById('btn-generate-ai');
     btn.textContent = 'Generating...';
     btn.disabled = true;
 
-    if (isAi) {
-        showAiProgress(true);
-        setAiProgress(0, 'Starting...');
+    showAiProgress(true);
+    setAiProgress(0, 'Starting...');
+
+    const progressCancel = startAiProgressSimulation();
+
+    try {
+        const resp = await fetch('/api/generate_ai_mesh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ai_image_path: aiImagePath }),
+        });
+        const data = await resp.json();
+        if (data.error) {
+            setAiProgress(0, 'Error: ' + data.error);
+            setTimeout(() => showAiProgress(false), 3000);
+            alert('Error: ' + data.error);
+            return;
+        }
+
+        if (progressCancel) clearTimeout(progressCancel);
+        setAiProgress(100, 'Complete!');
+        setTimeout(() => showAiProgress(false), 2000);
+
+        aiMeshId = data.mesh_id;
+        aiRawStlUrl = data.ai_stl_url;
+
+        const loader = new STLLoader();
+        const geo = await loader.loadAsync(data.ai_stl_url);
+        geo.rotateX(-Math.PI / 2);
+        aiMeshGeo = geo;
+        aiMeshMaterial = new THREE.MeshPhysicalMaterial({
+            color: 0xe67e22,
+            metalness: 0.3,
+            roughness: 0.3,
+        });
+        updatePreview();
+
+        document.getElementById('download-ai-raw-stl').href = data.ai_stl_url;
+        document.getElementById('ai-download-links').style.display = 'flex';
+        document.getElementById('preview-status').textContent = 'AI mesh generated! Adjust sliders and download.';
+    } catch (err) {
+        setAiProgress(0, 'Error: ' + err.message);
+        setTimeout(() => showAiProgress(false), 3000);
+        alert('Error: ' + err.message);
+    } finally {
+        btn.textContent = 'Generate AI Mesh';
+        btn.disabled = false;
     }
+}
+
+async function exportAiPuck(format) {
+    if (!aiMeshId) {
+        alert('Generate the AI mesh first.');
+        return;
+    }
+
+    const params = {
+        ...readFormParams(),
+        ai_offset_x: parseFloat(document.getElementById('ai_offset_x').value) || 0,
+        ai_offset_y: parseFloat(document.getElementById('ai_offset_y').value) || 0,
+        ai_offset_z: parseFloat(document.getElementById('ai_offset_z').value) || 0,
+        ai_rotation_z: parseFloat(document.getElementById('ai_rotation_z').value) || 0,
+        ai_flip_x: document.getElementById('ai_flip_x').checked,
+        ai_flip_y: document.getElementById('ai_flip_y').checked,
+        ai_flip_z: document.getElementById('ai_flip_z').checked,
+        ai_scale: parseFloat(document.getElementById('ai_scale').value) || 10,
+        mesh_id: aiMeshId,
+        format: format,
+    };
+
+    try {
+        const resp = await fetch('/api/export_puck', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(params),
+        });
+        if (!resp.ok) {
+            const err = await resp.json();
+            alert('Export failed: ' + (err.error || resp.statusText));
+            return;
+        }
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `puck.${format}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        document.getElementById('preview-status').textContent = `Downloaded puck.${format} with current transforms.`;
+    } catch (err) {
+        alert('Export failed: ' + err.message);
+    }
+}
+
+async function generateAndDownload() {
+    const btn = document.getElementById('btn-generate');
+    btn.textContent = 'Generating...';
+    btn.disabled = true;
 
     const params = readFormParams();
     if (params.top_type === 'upload') {
         params.uploaded_stl_path = uploadPath;
-    } else if (params.top_type === 'ai_model') {
-        params.ai_image_path = aiImagePath;
-        params.ai_offset_x = parseFloat(document.getElementById('ai_offset_x').value);
-        params.ai_offset_y = parseFloat(document.getElementById('ai_offset_y').value);
-        params.ai_offset_z = parseFloat(document.getElementById('ai_offset_z').value);
-        params.ai_rotation_z = parseFloat(document.getElementById('ai_rotation_z').value);
-        params.ai_flip_x = document.getElementById('ai_flip_x').checked;
-        params.ai_flip_y = document.getElementById('ai_flip_y').checked;
-        params.ai_flip_z = document.getElementById('ai_flip_z').checked;
-        params.ai_scale = parseFloat(document.getElementById('ai_scale').value);
-    }
-
-    let progressCancel = null;
-    if (isAi) {
-        let stageIdx = 0;
-        let pct = 0;
-        const tick = () => {
-            if (stageIdx < AI_PROGRESS_STAGES.length && pct >= AI_PROGRESS_STAGES[stageIdx].at) {
-                setAiProgress(pct, AI_PROGRESS_STAGES[stageIdx].label);
-                stageIdx++;
-            }
-            setAiProgress(pct, null);
-            if (pct < 92) {
-                const inc = pct < 30 ? 1.5 : pct < 60 ? 0.8 : 0.3;
-                pct = Math.min(pct + inc, 92);
-                progressCancel = setTimeout(tick, 800);
-            }
-        };
-        tick();
     }
 
     try {
@@ -549,18 +649,8 @@ async function generateAndDownload() {
         });
         const data = await resp.json();
         if (data.error) {
-            if (isAi) {
-                setAiProgress(0, 'Error: ' + data.error);
-                setTimeout(() => showAiProgress(false), 3000);
-            }
             alert('Error: ' + data.error);
             return;
-        }
-
-        if (isAi) {
-            if (progressCancel) clearTimeout(progressCancel);
-            setAiProgress(100, 'Complete!');
-            setTimeout(() => showAiProgress(false), 2000);
         }
 
         document.getElementById('download-stl').href = data.stl_url;
@@ -581,28 +671,7 @@ async function generateAndDownload() {
             aiLink.href = data.ai_stl_url;
             aiLink.style.display = '';
         }
-
-        if (params.top_type === 'ai_model') {
-            try {
-                const loader = new STLLoader();
-                const geo = await loader.loadAsync(data.ai_stl_url || data.stl_url);
-                geo.rotateX(-Math.PI / 2);
-                aiMeshGeo = geo;
-                aiMeshMaterial = new THREE.MeshPhysicalMaterial({
-                    color: 0xe67e22,
-                    metalness: 0.3,
-                    roughness: 0.3,
-                });
-                updatePreview();
-            } catch (stlErr) {
-                console.warn('Could not load STL preview:', stlErr);
-            }
-        }
     } catch (err) {
-        if (isAi) {
-            setAiProgress(0, 'Network error');
-            setTimeout(() => showAiProgress(false), 3000);
-        }
         alert('Network error: ' + err.message);
     } finally {
         btn.textContent = 'Generate & Download';

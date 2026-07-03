@@ -1,11 +1,16 @@
 import tempfile
+import uuid
 from pathlib import Path
+
+import trimesh
 
 from flask import (
     Flask, render_template, request, jsonify, send_file, session
 )
 
 from . import generator
+
+_ai_mesh_cache: dict[str, str] = {}
 
 puck_designer_app = Flask(__name__)
 puck_designer_app.config["SECRET_KEY"] = "puck-designer-secret-change-in-production"
@@ -106,6 +111,117 @@ def api_generate():
         if ai_stl_path:
             resp["ai_stl_url"] = f"/api/download/{job_dir.name}/ai_model.stl"
         return jsonify(resp)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@puck_designer_app.route("/api/generate_ai_mesh", methods=["POST"])
+def api_generate_ai_mesh():
+    """Generate only the AI mesh (no merging or export) and cache it.
+
+    Expects JSON with ``ai_image_path``.  The raw mesh is saved to a temp
+    directory, its path is cached in ``_ai_mesh_cache``, and a download URL
+    for the raw mesh is returned so the frontend can load it for preview.
+
+    Returns:
+        JSON with ``mesh_id``, ``ai_stl_url``, and ``bounds``.
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No JSON data provided"}), 400
+
+    ai_image_path = data.get("ai_image_path")
+    if not ai_image_path:
+        return jsonify({"error": "No ai_image_path provided"}), 400
+
+    from .inference_instant_mesh import generate_mesh_from_image
+
+    ai_mesh_path = generate_mesh_from_image(ai_image_path, diffusion_steps=64)
+    mesh_id = str(uuid.uuid4())
+    _ai_mesh_cache[mesh_id] = str(ai_mesh_path)
+
+    # Export raw mesh to a temp dir so the frontend can download it for preview
+    output_dir = Path(tempfile.mkdtemp(prefix="puck_ai_"))
+    raw_mesh = trimesh.load(str(ai_mesh_path), force="mesh")
+    raw_mesh.export(str(output_dir / "ai_model.stl"), file_type="stl")
+
+    return jsonify({
+        "mesh_id": mesh_id,
+        "ai_stl_url": f"/api/download/{output_dir.name}/ai_model.stl",
+        "bounds": {
+            "min": raw_mesh.bounds[0].tolist(),
+            "max": raw_mesh.bounds[1].tolist(),
+        },
+    })
+
+
+@puck_designer_app.route("/api/export_puck", methods=["POST"])
+def api_export_puck():
+    """Generate a puck with AI transforms applied and return the file.
+
+    Uses a previously cached AI mesh (by ``mesh_id``) so the AI model is not
+    regenerated.  The caller specifies the desired format (``format``:
+    ``"stl"`` or ``"3mf"``).
+
+    Returns:
+        The puck file as an attachment download.
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No JSON data provided"}), 400
+
+    mesh_id = data.get("mesh_id")
+    if not mesh_id or mesh_id not in _ai_mesh_cache:
+        return jsonify({"error": "AI mesh not found"}), 400
+
+    fmt = data.get("format", "stl")
+    if fmt not in ("stl", "3mf"):
+        return jsonify({"error": f"Unsupported format: {fmt}"}), 400
+
+    ai_mesh_path = _ai_mesh_cache[mesh_id]
+
+    base_diameter = float(data.get("base_diameter", generator.DEFAULT_BASE_DIAMETER))
+    base_thickness = float(data.get("base_thickness", generator.DEFAULT_BASE_THICKNESS))
+    hole_diameter = float(data.get("hole_diameter", generator.DEFAULT_HOLE_DIAMETER))
+    hole_height = float(data.get("hole_height", generator.DEFAULT_HOLE_HEIGHT))
+    hole_bottom_offset = float(data.get("hole_bottom_offset", generator.DEFAULT_HOLE_BOTTOM_OFFSET))
+    base_fillet = float(data.get("base_fillet", 2.0))
+    ai_offset_x = float(data.get("ai_offset_x", 0))
+    ai_offset_y = float(data.get("ai_offset_y", 0))
+    ai_offset_z = float(data.get("ai_offset_z", 0))
+    ai_rotation_z = float(data.get("ai_rotation_z", 0))
+    ai_flip_x = data.get("ai_flip_x", False)
+    ai_flip_y = data.get("ai_flip_y", False)
+    ai_flip_z = data.get("ai_flip_z", False)
+    ai_scale = float(data.get("ai_scale", 10.0))
+
+    job_dir = Path(tempfile.mkdtemp(prefix="puck_export_"))
+
+    try:
+        result = generator.generate_and_export(
+            base_diameter=base_diameter,
+            base_thickness=base_thickness,
+            hole_diameter=hole_diameter,
+            hole_height=hole_height,
+            hole_bottom_offset=hole_bottom_offset,
+            top_type="ai_model",
+            base_fillet=base_fillet,
+            ai_pregen_mesh_path=ai_mesh_path,
+            ai_offset_x=ai_offset_x,
+            ai_offset_y=ai_offset_y,
+            ai_offset_z=ai_offset_z,
+            ai_rotation_z=ai_rotation_z,
+            ai_flip_x=ai_flip_x,
+            ai_flip_y=ai_flip_y,
+            ai_flip_z=ai_flip_z,
+            ai_scale=ai_scale,
+            output_dir=job_dir,
+        )
+        mesh, stl_path, _3mf_path, ai_stl_path = result
+
+        file_path = stl_path if fmt == "stl" else _3mf_path
+        mimetype = "model/stl" if fmt == "stl" else "application/vnd.ms-package.3dmanufacturing-3dmodel+xml"
+        return send_file(str(file_path), as_attachment=True, download_name=f"puck.{fmt}", mimetype=mimetype)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

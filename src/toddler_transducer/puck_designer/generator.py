@@ -532,7 +532,7 @@ def merge_stl(
     uploaded.apply_translation([offset_x, offset_y, 0])
 
     base_thickness = base_mesh.bounds[1][2] - base_mesh.bounds[0][2]
-    uploaded.apply_translation([0, 0, base_thickness / 2 + uploaded.bounds[1][2] - uploaded.bounds[0][2] + offset_z])
+    uploaded.apply_translation([0, 0, base_thickness / 2 + uploaded.bounds[1][2] + offset_z])
 
     return _combine_meshes(base_mesh, uploaded)
 
@@ -580,6 +580,7 @@ def generate_puck(
     text_height: float = 5,
     uploaded_stl_path: Optional[str] = None,
     ai_image_path: Optional[str] = None,
+    ai_pregen_mesh_path: Optional[str] = None,
     ai_offset_x: float = 0.0,
     ai_offset_y: float = 0.0,
     ai_offset_z: float = 0.0,
@@ -609,6 +610,7 @@ def generate_puck(
         text_height: Text extrusion depth.
         uploaded_stl_path: Path to uploaded mesh file.
         ai_image_path: Path to input image for AI model generation.
+        ai_pregen_mesh_path: Path to a pre-generated AI mesh (skips generation).
         ai_offset_x: X offset for the AI model on the puck.
         ai_offset_y: Y offset for the AI model on the puck.
         ai_offset_z: Additional Z offset for the AI model.
@@ -636,12 +638,15 @@ def generate_puck(
         mesh = add_shape(mesh, top_params.get("shape_type", "cube"), top_params)
     elif top_type == "upload" and uploaded_stl_path:
         mesh = merge_stl(mesh, uploaded_stl_path)
-    elif top_type == "ai_model" and ai_image_path:
-        from .inference_instant_mesh import generate_mesh_from_image
-        ai_mesh_path = generate_mesh_from_image(ai_image_path, diffusion_steps=64)
-        mesh = merge_stl(mesh, str(ai_mesh_path), offset_x=ai_offset_x, offset_y=ai_offset_y,
+    elif top_type == "ai_model" and (ai_image_path or ai_pregen_mesh_path):
+        if ai_pregen_mesh_path:
+            ai_mesh_path = ai_pregen_mesh_path
+        else:
+            from .inference_instant_mesh import generate_mesh_from_image
+            ai_mesh_path = generate_mesh_from_image(ai_image_path, diffusion_steps=64)
+        mesh = merge_stl(mesh, str(ai_mesh_path), offset_x=ai_offset_x, offset_y=-ai_offset_y,
                          offset_z=ai_offset_z, rotation_z=ai_rotation_z, flip_x=ai_flip_x,
-                         flip_y=ai_flip_y, flip_z=ai_flip_z, scale=ai_scale)
+                         flip_y=ai_flip_z, flip_z=ai_flip_y, scale=ai_scale)
 
     return mesh, ai_mesh_path
 
@@ -680,6 +685,7 @@ def generate_and_export(
     text_height: float = 5,
     uploaded_stl_path: Optional[str] = None,
     ai_image_path: Optional[str] = None,
+    ai_pregen_mesh_path: Optional[str] = None,
     ai_offset_x: float = 0.0,
     ai_offset_y: float = 0.0,
     ai_offset_z: float = 0.0,
@@ -710,6 +716,7 @@ def generate_and_export(
         text_height: Text extrusion depth.
         uploaded_stl_path: Path to uploaded mesh file.
         ai_image_path: Path to input image for AI model generation.
+        ai_pregen_mesh_path: Path to a pre-generated AI mesh (skips generation).
         ai_offset_x: X offset for the AI model on the puck.
         ai_offset_y: Y offset for the AI model on the puck.
         ai_offset_z: Additional Z offset for the AI model.
@@ -745,6 +752,7 @@ def generate_and_export(
         text_height=text_height,
         uploaded_stl_path=uploaded_stl_path,
         ai_image_path=ai_image_path,
+        ai_pregen_mesh_path=ai_pregen_mesh_path,
         ai_offset_x=ai_offset_x,
         ai_offset_y=ai_offset_y,
         ai_offset_z=ai_offset_z,
