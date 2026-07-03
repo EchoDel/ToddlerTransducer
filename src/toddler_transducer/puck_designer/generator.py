@@ -1,17 +1,14 @@
 import math
-import os
 import sys
 import tempfile
 from pathlib import Path
-from typing import Optional
 
+import freetype
 import numpy as np
 import trimesh
-from trimesh.creation import extrude_polygon
-import freetype
-from shapely.geometry import Polygon, MultiPolygon
+from shapely.geometry import Polygon
 from shapely.ops import unary_union
-
+from trimesh.creation import extrude_polygon
 
 FONT_PATH = Path("/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf")
 DEFAULT_BASE_DIAMETER = 50
@@ -166,13 +163,48 @@ def create_text_mesh(text, font_path=FONT_PATH, font_size=48, height=5):
     return text_mesh
 
 
+def _filleted_cylinder_profile(radius, height, fillet, arc_segments=8):
+    profile = []
+    h = height
+    r = radius
+    f = min(fillet, r * 0.4, h * 0.4)
+
+    # center bottom
+    profile.append((0, -h / 2))
+
+    # bottom outer edge — straight to fillet start
+    profile.append((r - f, -h / 2))
+
+    # bottom fillet arc
+    cx, cy = r - f, -h / 2 + f
+    for i in range(1, arc_segments + 1):
+        a = -math.pi / 2 + (math.pi / 2) * (i / arc_segments)
+        profile.append((cx + f * math.cos(a), cy + f * math.sin(a)))
+
+    # side wall — straight to top fillet start
+    profile.append((r, h / 2 - f))
+
+    # top fillet arc
+    cx, cy = r - f, h / 2 - f
+    for i in range(1, arc_segments + 1):
+        a = 0 + (math.pi / 2) * (i / arc_segments)
+        profile.append((cx + f * math.cos(a), cy + f * math.sin(a)))
+
+    # top flat part to center
+    profile.append((0, h / 2))
+
+    return np.array(profile)
+
+
 def create_base(diameter=DEFAULT_BASE_DIAMETER, thickness=DEFAULT_BASE_THICKNESS,
                 hole_diameter=DEFAULT_HOLE_DIAMETER,
                 hole_height=DEFAULT_HOLE_HEIGHT,
-                hole_bottom_offset=DEFAULT_HOLE_BOTTOM_OFFSET, segments=64):
+                hole_bottom_offset=DEFAULT_HOLE_BOTTOM_OFFSET, segments=64,
+                fillet_radius=2.0):
     outer_radius = diameter / 2
 
-    base = trimesh.creation.cylinder(radius=outer_radius, height=thickness, sections=segments)
+    profile = _filleted_cylinder_profile(outer_radius, thickness, fillet_radius, arc_segments=6)
+    base = trimesh.creation.revolve(profile, sections=segments)
 
     hole_radius = min(hole_diameter / 2, outer_radius - 0.5)
     cavity_height = max(0, hole_height)
@@ -319,7 +351,8 @@ def add_text(base_mesh, text, font_path=FONT_PATH, font_size=48, text_height=5):
 def generate_puck(base_diameter=DEFAULT_BASE_DIAMETER, base_thickness=DEFAULT_BASE_THICKNESS,
                   hole_diameter=DEFAULT_HOLE_DIAMETER,
                   hole_height=DEFAULT_HOLE_HEIGHT,
-                  hole_bottom_offset=DEFAULT_HOLE_BOTTOM_OFFSET, top_type="none",
+                  hole_bottom_offset=DEFAULT_HOLE_BOTTOM_OFFSET,
+                  base_fillet=2.0, top_type="none",
                   top_params=None, text_content="", font_size=48, text_height=5,
                   uploaded_stl_path=None, ai_image_path=None,
                         ai_offset_x=0.0, ai_offset_y=0.0, ai_offset_z=0.0, ai_rotation_z=0.0,
@@ -331,7 +364,8 @@ def generate_puck(base_diameter=DEFAULT_BASE_DIAMETER, base_thickness=DEFAULT_BA
     ai_mesh_path = None
     mesh = create_base(diameter=base_diameter, thickness=base_thickness, hole_diameter=hole_diameter,
                        hole_height=hole_height,
-                       hole_bottom_offset=hole_bottom_offset)
+                       hole_bottom_offset=hole_bottom_offset,
+                       fillet_radius=base_fillet)
 
     if top_type == "text" and text_content:
         mesh = add_text(mesh, text_content, font_size=font_size, text_height=text_height)
@@ -361,7 +395,8 @@ def export_3mf(mesh, filepath):
 def generate_and_export(base_diameter=DEFAULT_BASE_DIAMETER, base_thickness=DEFAULT_BASE_THICKNESS,
                         hole_diameter=DEFAULT_HOLE_DIAMETER,
                         hole_height=DEFAULT_HOLE_HEIGHT,
-                        hole_bottom_offset=DEFAULT_HOLE_BOTTOM_OFFSET, top_type="none",
+                        hole_bottom_offset=DEFAULT_HOLE_BOTTOM_OFFSET,
+                        base_fillet=2.0, top_type="none",
                         top_params=None, text_content="", font_size=48, text_height=5,
                         uploaded_stl_path=None, ai_image_path=None,
                   ai_offset_x=0.0, ai_offset_y=0.0, ai_offset_z=0.0, ai_rotation_z=0.0,
@@ -379,6 +414,7 @@ def generate_and_export(base_diameter=DEFAULT_BASE_DIAMETER, base_thickness=DEFA
         hole_diameter=hole_diameter,
         hole_height=hole_height,
         hole_bottom_offset=hole_bottom_offset,
+        base_fillet=base_fillet,
         top_type=top_type,
         top_params=top_params,
         text_content=text_content,

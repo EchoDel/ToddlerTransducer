@@ -1,23 +1,21 @@
-import os
 import sys
-import argparse
 import tempfile
 from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
+import rembg
 import torch
 import trimesh
-import rembg
 from PIL import Image
+from diffusers import DiffusionPipeline, EulerAncestralDiscreteScheduler
+from einops import rearrange
+from huggingface_hub import hf_hub_download
+from omegaconf import OmegaConf
+from pytorch_lightning import seed_everything
 from shapely.geometry import Polygon as ShapelyPolygon
 from torchvision.transforms import v2
 from torchvision.utils import save_image
-from pytorch_lightning import seed_everything
-from omegaconf import OmegaConf
-from einops import rearrange
-from huggingface_hub import hf_hub_download
-from diffusers import DiffusionPipeline, EulerAncestralDiscreteScheduler
 
 INSTANT_MESH_DIR = Path(__file__).resolve().parents[3] / "vendor" / "InstantMesh"
 sys.path.insert(0, str(INSTANT_MESH_DIR))

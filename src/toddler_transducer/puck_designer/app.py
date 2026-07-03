@@ -1,5 +1,3 @@
-import json
-import shutil
 import tempfile
 from pathlib import Path
 
@@ -40,6 +38,7 @@ def api_generate():
     shape_type = data.get("shape_type", "cube")
     shape_params = data.get("shape_params", {})
     ai_image_path = data.get("ai_image_path")
+    base_fillet = float(data.get("base_fillet", 2.0))
     ai_offset_x = float(data.get("ai_offset_x", 0))
     ai_offset_y = float(data.get("ai_offset_y", 0))
     ai_offset_z = float(data.get("ai_offset_z", 0))
@@ -65,6 +64,7 @@ def api_generate():
             text_content=text_content,
             font_size=font_size,
             text_height=text_height,
+            base_fillet=base_fillet,
             ai_image_path=ai_image_path,
             ai_offset_x=ai_offset_x,
             ai_offset_y=ai_offset_y,
