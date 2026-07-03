@@ -637,7 +637,6 @@ def generate_puck(
     elif top_type == "upload" and uploaded_stl_path:
         mesh = merge_stl(mesh, uploaded_stl_path)
     elif top_type == "ai_model" and ai_image_path:
-        sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "vendor" / "nvdiffrast_stub"))
         from .inference_instant_mesh import generate_mesh_from_image
         ai_mesh_path = generate_mesh_from_image(ai_image_path, diffusion_steps=64)
         mesh = merge_stl(mesh, str(ai_mesh_path), offset_x=ai_offset_x, offset_y=ai_offset_y,

@@ -2,7 +2,7 @@ import sys
 import tempfile
 from collections import defaultdict
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import numpy as np
 import rembg
@@ -12,13 +12,15 @@ from PIL import Image
 from diffusers import DiffusionPipeline, EulerAncestralDiscreteScheduler
 from einops import rearrange
 from huggingface_hub import hf_hub_download
-from omegaconf import OmegaConf
+from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import seed_everything
 from shapely.geometry import Polygon as ShapelyPolygon
 from torchvision.transforms import v2
 from torchvision.utils import save_image
 
 INSTANT_MESH_DIR = Path(__file__).resolve().parents[3] / "vendor" / "InstantMesh"
+NVDIFFRAST_STUB_DIR = Path(__file__).resolve().parents[3] / "vendor" / "nvdiffrast_stub"
+sys.path.insert(0, str(NVDIFFRAST_STUB_DIR))
 sys.path.insert(0, str(INSTANT_MESH_DIR))
 
 from src.utils.train_util import instantiate_from_config
@@ -137,6 +139,213 @@ def make_watertight(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
     return result
 
 
+def _load_zero123plus_pipeline(
+    config_name: str,
+    device: torch.device,
+) -> DiffusionPipeline:
+    """Load the Zero123++ diffusion pipeline with UNet weights.
+
+    Args:
+        config_name: Model config name used to determine which UNet checkpoint
+                     to fetch.
+        device: Torch device to move the pipeline to.
+
+    Returns:
+        A fully loaded and configured DiffusionPipeline.
+    """
+    print("Loading diffusion model (Zero123++) ...")
+    pipeline = DiffusionPipeline.from_pretrained(
+        "sudo-ai/zero123plus-v1.2",
+        custom_pipeline=str(INSTANT_MESH_DIR / "zero123plus" / "pipeline.py"),
+        torch_dtype=torch.float32,
+    )
+    pipeline.scheduler = EulerAncestralDiscreteScheduler.from_config(
+        pipeline.scheduler.config, timestep_spacing="trailing"
+    )
+
+    _, unet_ckpt_path = ensure_model_weights(config_name)
+    state_dict = torch.load(unet_ckpt_path, map_location="cpu")
+    pipeline.unet.load_state_dict(state_dict, strict=True)
+    pipeline = pipeline.to(device)
+    return pipeline
+
+
+def _load_reconstruction_model(
+    config_name: str,
+    model_config: DictConfig,
+    device: torch.device,
+) -> torch.nn.Module:
+    """Load the InstantMesh reconstruction model (FlexiCubes or NeRF).
+
+    Args:
+        config_name: Model config name used to determine which reconstruction
+                     checkpoint to fetch.
+        model_config: OmegaConf DictConfig for model architecture.
+        device: Torch device to move the model to.
+
+    Returns:
+        The loaded reconstruction model in eval mode.
+    """
+    print("Loading reconstruction model ...")
+    model = instantiate_from_config(model_config)
+    model_ckpt_path, _ = ensure_model_weights(config_name)
+    state_dict = torch.load(model_ckpt_path, map_location="cpu")["state_dict"]
+    state_dict = {k[14:]: v for k, v in state_dict.items() if k.startswith("lrm_generator.")}
+    model.load_state_dict(state_dict, strict=True)
+    model = model.to(device)
+    model = model.eval()
+    if hasattr(model, "init_flexicubes_geometry"):
+        model.init_flexicubes_geometry(device)
+    return model
+
+
+def _process_input_image(
+    image_path: str,
+    no_rembg: bool = False,
+) -> Image.Image:
+    """Load an image and optionally remove its background.
+
+    Args:
+        image_path: Path to the input image.
+        no_rembg: Skip background removal when True (default False).
+
+    Returns:
+        A PIL Image ready for the diffusion pipeline.
+    """
+    input_image = Image.open(image_path).convert("RGB")
+    if not no_rembg:
+        rembg_session = rembg.new_session()
+        input_image = remove_background(input_image, rembg_session)
+        input_image = resize_foreground(input_image, 0.85)
+    return input_image
+
+
+def _run_diffusion(
+    pipeline: DiffusionPipeline,
+    input_image: Image.Image,
+    diffusion_steps: int,
+    multiview_resolution: int,
+    images_dir: Path,
+    name: str,
+    save_multiview: bool = True,
+) -> torch.Tensor:
+    """Run Zero123++ multi-view diffusion and return the view images.
+
+    Args:
+        pipeline: Loaded Zero123++ pipeline.
+        input_image: Pre-processed input image.
+        diffusion_steps: Number of denoising steps.
+        multiview_resolution: Per-view resolution in pixels.
+        images_dir: Directory to save intermediate images into.
+        name: Base name for saved image files.
+        save_multiview: Save the full multi-view collage when True.
+
+    Returns:
+        Tensor of shape (N, C, H, W) with individual view images, on CPU.
+    """
+    output_image = pipeline(
+        input_image,
+        num_inference_steps=diffusion_steps,
+        width=multiview_resolution * 2,
+        height=multiview_resolution * 3,
+    ).images[0]
+
+    if save_multiview:
+        output_image.save(str(images_dir / f"{name}.png"))
+
+    images = np.asarray(output_image, dtype=np.float32) / 255.0
+    images = torch.from_numpy(images).permute(2, 0, 1).contiguous().float()
+    images = rearrange(images, "c (n h) (m w) -> (n m) c h w", n=3, m=2)
+
+    for n, x in enumerate(images):
+        save_image(x, images_dir / f"viewpoint_{n}.png")
+
+    return images
+
+
+def _run_reconstruction(
+    model: torch.nn.Module,
+    images: torch.Tensor,
+    view: int,
+    scale: float,
+    device: torch.device,
+    infer_config: dict[str, Any],
+    images_dir: Path,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Reconstruct a 3D mesh from multi-view images.
+
+    Args:
+        model: Loaded reconstruction model.
+        images: Multi-view image tensor on CPU.
+        view: Number of views, 4 or 6.
+        scale: Camera-distance scale factor.
+        device: Torch device for computation.
+        infer_config: Extra kwargs for extract_mesh (from YAML config).
+        images_dir: Directory to save rescaled viewpoint images.
+
+    Returns:
+        Tuple of (vertices, faces, vertex_colors) as numpy arrays.
+    """
+    input_cameras = get_zero123plus_input_cameras(batch_size=1, radius=4.0 * scale, fov=30).to(device)
+
+    images = images.unsqueeze(0).to(device)
+    images = v2.functional.resize(images, 320, interpolation=3, antialias=True).clamp(0, 1)
+
+    for n, x in enumerate(images):
+        save_image(x, images_dir / f"viewpoint_rescaled_{n}.png")
+
+    if view == 4:
+        indices = torch.tensor([0, 2, 4, 5]).long().to(device)
+        images = images[:, indices]
+        input_cameras = input_cameras[:, indices]
+
+    with torch.no_grad():
+        planes = model.forward_planes(images, input_cameras)
+
+        mesh_out = model.extract_mesh(
+            planes,
+            use_texture_map=False,
+            **infer_config,
+        )
+        vertices, faces, vertex_colors = mesh_out
+
+    return vertices, faces, vertex_colors
+
+
+def _save_watertight_mesh(
+    vertices: np.ndarray,
+    faces: np.ndarray,
+    vertex_colors: np.ndarray,
+    meshes_dir: Path,
+    name: str,
+) -> Path:
+    """Save the raw mesh, make it watertight, and export the final .obj.
+
+    Args:
+        vertices: (V, 3) vertex positions.
+        faces: (F, 3) face indices.
+        vertex_colors: (V, 3) vertex RGB colors.
+        meshes_dir: Directory to save mesh files into.
+        name: Base name for the output files.
+
+    Returns:
+        Path to the watertight .obj file.
+    """
+    raw_path = meshes_dir / f"{name}_raw.obj"
+    save_obj(vertices, faces, vertex_colors, str(raw_path))
+    print(f"Raw mesh saved to {raw_path}")
+
+    raw_mesh = trimesh.load(str(raw_path), force="mesh")
+    watertight_mesh = make_watertight(raw_mesh)
+    mesh_path = meshes_dir / f"{name}.obj"
+    watertight_mesh.export(str(mesh_path))
+    print(
+        f"Watertight mesh saved to {mesh_path} "
+        f"({len(watertight_mesh.vertices)} verts, {len(watertight_mesh.faces)} faces)"
+    )
+    return mesh_path
+
+
 def ensure_model_weights(config_name: str = "instant-nerf-base") -> tuple[str, str]:
     """Download InstantMesh reconstruction and Zero123++ UNet weights.
 
@@ -206,90 +415,24 @@ def generate_mesh_from_image(
     model_config = config.model_config
     infer_config = config.infer_config
 
-    print("Loading diffusion model (Zero123++) ...")
-    pipeline = DiffusionPipeline.from_pretrained(
-        "sudo-ai/zero123plus-v1.2",
-        custom_pipeline=str(INSTANT_MESH_DIR / "zero123plus" / "pipeline.py"),
-        torch_dtype=torch.float32,
-    )
-    pipeline.scheduler = EulerAncestralDiscreteScheduler.from_config(
-        pipeline.scheduler.config, timestep_spacing="trailing"
-    )
-
-    _, unet_ckpt_path = ensure_model_weights(config_name)
-    state_dict = torch.load(unet_ckpt_path, map_location="cpu")
-    pipeline.unet.load_state_dict(state_dict, strict=True)
-    pipeline = pipeline.to(device)
-
-    print("Loading reconstruction model ...")
-    model = instantiate_from_config(model_config)
-    model_ckpt_path, _ = ensure_model_weights(config_name)
-    state_dict = torch.load(model_ckpt_path, map_location="cpu")["state_dict"]
-    state_dict = {k[14:]: v for k, v in state_dict.items() if k.startswith("lrm_generator.")}
-    model.load_state_dict(state_dict, strict=True)
-    model = model.to(device)
-    model = model.eval()
-    if hasattr(model, "init_flexicubes_geometry"):
-        model.init_flexicubes_geometry(device)
+    pipeline = _load_zero123plus_pipeline(config_name, device)
+    model = _load_reconstruction_model(config_name, model_config, device)
 
     name = Path(image_path).stem
     print(f"Processing {name} ...")
 
-    input_image = Image.open(image_path).convert("RGB")
-    if not no_rembg:
-        rembg_session = rembg.new_session()
-        input_image = remove_background(input_image, rembg_session)
-        input_image = resize_foreground(input_image, 0.85)
+    input_image = _process_input_image(image_path, no_rembg)
 
-    output_image = pipeline(
-        input_image,
-        num_inference_steps=diffusion_steps,
-        width=multiview_resolution * 2,
-        height=multiview_resolution * 3,
-    ).images[0]
-
-    if save_multiview:
-        output_image.save(str(images_dir / f"{name}.png"))
-
-    images = np.asarray(output_image, dtype=np.float32) / 255.0
-    images = torch.from_numpy(images).permute(2, 0, 1).contiguous().float()
-    images = rearrange(images, "c (n h) (m w) -> (n m) c h w", n=3, m=2)
-
-    for n, x in enumerate(images):
-        save_image(x, images_dir / f'viewpoint_{n}.png')
+    images = _run_diffusion(
+        pipeline, input_image, diffusion_steps,
+        multiview_resolution, images_dir, name, save_multiview,
+    )
 
     del pipeline
 
-    input_cameras = get_zero123plus_input_cameras(batch_size=1, radius=4.0 * scale, fov=30).to(device)
+    vertices, faces, vertex_colors = _run_reconstruction(
+        model, images, view, scale, device, infer_config, images_dir,
+    )
 
-    images = images.unsqueeze(0).to(device)
-    images = v2.functional.resize(images, 320, interpolation=3, antialias=True).clamp(0, 1)
-
-    for n, x in enumerate(images):
-        save_image(x, images_dir / f'viewpoint_rescaled_{n}.png')
-
-    if view == 4:
-        indices = torch.tensor([0, 2, 4, 5]).long().to(device)
-        images = images[:, indices]
-        input_cameras = input_cameras[:, indices]
-
-    with torch.no_grad():
-        planes = model.forward_planes(images, input_cameras)
-
-        mesh_out = model.extract_mesh(
-            planes,
-            use_texture_map=False,
-            **infer_config,
-        )
-        vertices, faces, vertex_colors = mesh_out
-        raw_path = meshes_dir / f"{name}_raw.obj"
-        save_obj(vertices, faces, vertex_colors, str(raw_path))
-        print(f"Raw mesh saved to {raw_path}")
-
-    raw_mesh = trimesh.load(str(raw_path), force="mesh")
-    watertight_mesh = make_watertight(raw_mesh)
-    mesh_path = meshes_dir / f"{name}.obj"
-    watertight_mesh.export(str(mesh_path))
-    print(f"Watertight mesh saved to {mesh_path} ({len(watertight_mesh.vertices)} verts, {len(watertight_mesh.faces)} faces)")
-
+    mesh_path = _save_watertight_mesh(vertices, faces, vertex_colors, meshes_dir, name)
     return mesh_path
