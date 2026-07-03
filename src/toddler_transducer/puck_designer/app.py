@@ -17,11 +17,25 @@ OUTPUT_DIR = Path(tempfile.mkdtemp(prefix="puck_outputs_"))
 
 @puck_designer_app.route("/")
 def index():
+    """Render the main puck designer page.
+
+    Returns:
+        Rendered HTML template.
+    """
     return render_template("designer.html")
 
 
 @puck_designer_app.route("/api/generate", methods=["POST"])
 def api_generate():
+    """Generate a puck mesh and return download URLs for the output files.
+
+    Expects a JSON body with puck parameters.  Returns STL and 3MF download
+    URLs, plus bounds and optionally an AI-model-only download URL.
+
+    Returns:
+        JSON response with 'stl_url', '3mf_url', 'bounds', and optionally
+        'ai_stl_url'.  Returns 400 on missing data and 500 on error.
+    """
     data = request.get_json()
     if not data:
         return jsonify({"error": "No JSON data provided"}), 400
@@ -97,7 +111,16 @@ def api_generate():
 
 
 @puck_designer_app.route("/api/download/<job_id>/<filename>")
-def api_download(job_id, filename):
+def api_download(job_id: str, filename: str):
+    """Serve a generated file for download.
+
+    Args:
+        job_id: Directory name of the job output.
+        filename: Name of the file to serve.
+
+    Returns:
+        The file as an attachment, or JSON 404 if not found.
+    """
     job_dir = Path(tempfile.gettempdir()) / job_id
     file_path = job_dir / filename
     if not file_path.exists():
@@ -107,6 +130,13 @@ def api_download(job_id, filename):
 
 @puck_designer_app.route("/api/upload_stl", methods=["POST"])
 def api_upload_stl():
+    """Upload a 3D mesh file (STL/3MF/OBJ) for use as a top feature.
+
+    Expects a multipart/form-data upload with field name 'stl_file'.
+
+    Returns:
+        JSON with 'upload_path' on success, or error with appropriate status.
+    """
     if "stl_file" not in request.files:
         return jsonify({"error": "No file provided"}), 400
 
@@ -126,6 +156,14 @@ def api_upload_stl():
 
 @puck_designer_app.route("/api/upload_image", methods=["POST"])
 def api_upload_image():
+    """Upload an image file for AI model generation.
+
+    Accepts PNG, JPG, JPEG, WebP, and BMP via multipart/form-data with
+    field name 'image_file'.
+
+    Returns:
+        JSON with 'upload_path' on success, or error with appropriate status.
+    """
     if "image_file" not in request.files:
         return jsonify({"error": "No file provided"}), 400
 
@@ -145,6 +183,14 @@ def api_upload_image():
 
 @puck_designer_app.route("/api/preview_mesh", methods=["POST"])
 def api_preview_mesh():
+    """Generate a preview mesh (non-AI types) and return vertices and faces.
+
+    For AI models a 400 error is returned because the generation is too slow
+    for real-time preview.
+
+    Returns:
+        JSON with 'vertices', 'faces', and 'bounds', or error with status.
+    """
     data = request.get_json()
     if not data:
         return jsonify({"error": "No JSON data provided"}), 400

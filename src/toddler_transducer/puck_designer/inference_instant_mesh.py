@@ -2,6 +2,7 @@ import sys
 import tempfile
 from collections import defaultdict
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import rembg
@@ -30,6 +31,19 @@ REPO_ID = "TencentARC/InstantMesh"
 
 
 def make_watertight(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
+    """Fill planar boundary holes and keep the largest connected component.
+
+    Detects boundary edges via edge-count analysis, groups them into loops,
+    triangulates each planar loop (all vertices share the same Z), and
+    patches the hole.  Non-planar holes are skipped.  After patching, only the
+    largest connected component is retained.
+
+    Args:
+        mesh: A Trimesh that may contain boundary holes.
+
+    Returns:
+        A watertight Trimesh containing only the largest component.
+    """
     edge_counts = defaultdict(int)
     for face in mesh.faces:
         for i in range(3):
@@ -123,7 +137,16 @@ def make_watertight(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
     return result
 
 
-def ensure_model_weights(config_name="instant-nerf-base"):
+def ensure_model_weights(config_name: str = "instant-nerf-base") -> tuple[str, str]:
+    """Download InstantMesh reconstruction and Zero123++ UNet weights.
+
+    Args:
+        config_name: Configuration name identifying which checkpoint to fetch
+                     (default 'instant-nerf-base').
+
+    Returns:
+        Tuple of (reconstruction_ckpt_path, unet_ckpt_path).
+    """
     base_ckpt = f"{config_name.replace('-', '_')}.ckpt"
     ckpt_path = hf_hub_download(repo_id=REPO_ID, filename=base_ckpt, repo_type="model")
     unet_path = hf_hub_download(
@@ -134,7 +157,7 @@ def ensure_model_weights(config_name="instant-nerf-base"):
 
 def generate_mesh_from_image(
     image_path: str,
-    output_dir: str = None,
+    output_dir: Optional[str] = None,
     diffusion_steps: int = 75,
     seed: int = 42,
     scale: float = 1.0,
@@ -144,6 +167,29 @@ def generate_mesh_from_image(
     multiview_resolution: int = 320,
     config_name: str = "instant-mesh-base",
 ) -> Path:
+    """Generate a watertight 3D mesh from a 2D image.
+
+    Pipeline: remove background → Zero123++ multi-view diffusion →
+    FlexiCubes / LRM reconstruction → mesh extraction → watertight
+    post-processing.
+
+    Args:
+        image_path: Path to the input 2D image.
+        output_dir: Directory for output files (images and meshes).  A temp
+                    dir is created when None.
+        diffusion_steps: Number of denoising steps for Zero123++ (default 75).
+        seed: Random seed for reproducibility (default 42).
+        scale: Camera-distance scale factor (default 1.0).
+        view: Number of views for reconstruction, 4 or 6 (default 6).
+        no_rembg: Skip background removal when True (default False).
+        save_multiview: Save the multi-view image to disk (default True).
+        multiview_resolution: Per-view resolution in pixels (default 320).
+        config_name: Model config name, 'instant-mesh-base' for FlexiCubes or
+                     'instant-nerf-base' for NeRF (default 'instant-mesh-base').
+
+    Returns:
+        Path to the exported watertight .obj file.
+    """
     if output_dir is None:
         output_dir = tempfile.mkdtemp(prefix="instantmesh_")
     output_dir = Path(output_dir)

@@ -4,7 +4,12 @@ import sys
 from .app import puck_designer_app
 
 
-def main():
+def main() -> None:
+    """Parse CLI arguments and start the Puck Designer Flask server.
+
+    Parses --port, --host, and --debug flags, then runs the Flask
+    development server.
+    """
     parser = argparse.ArgumentParser(
         description="Puck Designer - 3D model customizer for Toddler Transducer pucks"
     )
