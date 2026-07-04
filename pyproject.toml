@@ -22,6 +22,8 @@ dependencies = [
     "lxml",
     "scipy",
     "manifold3d",
+    "numpy>=1.24,<2.5",
+    "hy3dgen",
 ]
 
 [tool.pylint.main]

@@ -3,11 +3,11 @@ import uuid
 from pathlib import Path
 
 import trimesh
-
 from flask import (
     Flask, render_template, request, jsonify, send_file, session
 )
 
+from ..config import AI_MODEL_BACKEND
 from . import generator
 
 _ai_mesh_cache: dict[str, str] = {}
@@ -134,7 +134,11 @@ def api_generate_ai_mesh():
     if not ai_image_path:
         return jsonify({"error": "No ai_image_path provided"}), 400
 
-    from .inference_instant_mesh import generate_mesh_from_image
+    backend = data.get("backend", AI_MODEL_BACKEND)
+    if backend == "hunyuan3d":
+        from .inference_hunyuan3d import generate_mesh_from_image
+    else:
+        from .inference_instant_mesh import generate_mesh_from_image
 
     ai_mesh_path = generate_mesh_from_image(ai_image_path, diffusion_steps=64)
     mesh_id = str(uuid.uuid4())

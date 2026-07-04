@@ -4,6 +4,8 @@ import tempfile
 from pathlib import Path
 from typing import Any, Optional
 
+from ..config import AI_MODEL_BACKEND
+
 import freetype
 import numpy as np
 import trimesh
@@ -593,8 +595,8 @@ def generate_puck(
     """Assemble a complete puck by creating the base and adding the top feature.
 
     Top feature is chosen by *top_type*: 'text' embosses text, 'shape' adds a
-    primitive, 'upload' merges an external mesh, 'ai_model' runs InstantMesh
-    on an image and merges the result.
+    primitive, 'upload' merges an external mesh, 'ai_model' generates a 3D
+    mesh from an image via the configured AI backend and merges the result.
 
     Args:
         base_diameter: Puck outer diameter in mm.
@@ -642,7 +644,10 @@ def generate_puck(
         if ai_pregen_mesh_path:
             ai_mesh_path = ai_pregen_mesh_path
         else:
-            from .inference_instant_mesh import generate_mesh_from_image
+            if AI_MODEL_BACKEND == "hunyuan3d":
+                from .inference_hunyuan3d import generate_mesh_from_image
+            else:
+                from .inference_instant_mesh import generate_mesh_from_image
             ai_mesh_path = generate_mesh_from_image(ai_image_path, diffusion_steps=64)
         mesh = merge_stl(mesh, str(ai_mesh_path), offset_x=ai_offset_x, offset_y=-ai_offset_y,
                          offset_z=ai_offset_z, rotation_z=ai_rotation_z, flip_x=ai_flip_x,
