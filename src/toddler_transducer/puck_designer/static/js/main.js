@@ -9,6 +9,8 @@ let puckGroup = null;
 let font = null;
 let pendingUpdate = null;
 let uploadPath = null;
+let uploadMeshUrl = null;
+let uploadMeshGeo = null;
 let aiImagePath = null;
 let aiImageDataUrl = null;
 let aiMeshGeo = null;
@@ -219,23 +221,50 @@ function createPreviewMesh() {
             placeholder.position.y = halfThick + textH / 2;
             group.add(placeholder);
         }
-    } else if (topType === 'upload' && uploadPath) {
-        const placeholder = new THREE.Mesh(
-            new THREE.BoxGeometry(20, 10, 20),
-            new THREE.MeshPhysicalMaterial({
+    } else if (topType === 'upload') {
+        if (uploadMeshGeo) {
+            const geo = uploadMeshGeo.clone();
+            const mesh = new THREE.Mesh(geo, new THREE.MeshPhysicalMaterial({
                 color: 0x2ecc71,
-                metalness: 0.1,
-                roughness: 0.6,
-                transparent: true,
-                opacity: 0.5,
-            })
-        );
-        placeholder.position.y = halfThick + 5;
-        group.add(placeholder);
+                metalness: 0.2,
+                roughness: 0.4,
+            }));
+            mesh.castShadow = true;
 
-        const labelSprite = makeTextSprite('STL loaded');
-        labelSprite.position.y = halfThick + 15;
-        group.add(labelSprite);
+            const scale = parseFloat(document.getElementById('upload_scale').value);
+            const fx = document.getElementById('upload_flip_x').checked;
+            const fy = document.getElementById('upload_flip_y').checked;
+            const fz = document.getElementById('upload_flip_z').checked;
+            const rot = parseFloat(document.getElementById('upload_rotation_z').value);
+
+            mesh.scale.set(scale * (fx ? -1 : 1), scale * (fy ? -1 : 1), scale * (fz ? -1 : 1));
+            mesh.rotation.y = rot * Math.PI / 180;
+
+            const bbox = new THREE.Box3().setFromObject(mesh);
+            const halfH = (bbox.max.y - bbox.min.y) / 2;
+            const ox = parseFloat(document.getElementById('upload_offset_x').value);
+            const oy = parseFloat(document.getElementById('upload_offset_y').value);
+            const oz = parseFloat(document.getElementById('upload_offset_z').value);
+            mesh.position.set(ox, halfThick + halfH + oz, oy);
+
+            group.add(mesh);
+        } else if (uploadPath) {
+            const placeholder = new THREE.Mesh(
+                new THREE.BoxGeometry(20, 10, 20),
+                new THREE.MeshPhysicalMaterial({
+                    color: 0x2ecc71,
+                    metalness: 0.1,
+                    roughness: 0.6,
+                    transparent: true,
+                    opacity: 0.3,
+                })
+            );
+            placeholder.position.y = halfThick + 5;
+            group.add(placeholder);
+            const labelSprite = makeTextSprite('Loading...');
+            labelSprite.position.y = halfThick + 15;
+            group.add(labelSprite);
+        }
     } else if (topType === 'ai_model') {
         if (aiMeshGeo) {
             const geo = aiMeshGeo.clone();
@@ -397,6 +426,11 @@ const sliderConfig = [
     { id: 'ai_offset_z', valId: 'ai_offset_z_val', decimals: 1 },
     { id: 'ai_rotation_z', valId: 'ai_rotation_z_val', decimals: 0 },
     { id: 'ai_scale', valId: 'ai_scale_val', decimals: 1 },
+    { id: 'upload_offset_x', valId: 'upload_offset_x_val', decimals: 1 },
+    { id: 'upload_offset_y', valId: 'upload_offset_y_val', decimals: 1 },
+    { id: 'upload_offset_z', valId: 'upload_offset_z_val', decimals: 1 },
+    { id: 'upload_rotation_z', valId: 'upload_rotation_z_val', decimals: 0 },
+    { id: 'upload_scale', valId: 'upload_scale_val', decimals: 1 },
 ];
 
 function bindControls() {
@@ -414,6 +448,9 @@ function bindControls() {
     document.getElementById('ai_flip_x').addEventListener('change', updatePreview);
     document.getElementById('ai_flip_y').addEventListener('change', updatePreview);
     document.getElementById('ai_flip_z').addEventListener('change', updatePreview);
+    document.getElementById('upload_flip_x').addEventListener('change', updatePreview);
+    document.getElementById('upload_flip_y').addEventListener('change', updatePreview);
+    document.getElementById('upload_flip_z').addEventListener('change', updatePreview);
 
     document.getElementById('top_type').addEventListener('change', () => {
         const val = document.getElementById('top_type').value;
@@ -433,6 +470,13 @@ function bindControls() {
     document.getElementById('stl_file').addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
+
+        if (uploadMeshGeo) {
+            uploadMeshGeo.dispose();
+            uploadMeshGeo = null;
+        }
+        uploadMeshUrl = null;
+
         const formData = new FormData();
         formData.append('stl_file', file);
         try {
@@ -440,8 +484,16 @@ function bindControls() {
             const data = await resp.json();
             if (data.upload_path) {
                 uploadPath = data.upload_path;
+                uploadMeshUrl = data.stl_url;
                 document.getElementById('upload-status').textContent = `Loaded: ${file.name}`;
                 document.getElementById('upload-status').className = 'upload-status success';
+
+                if (data.stl_url) {
+                    const loader = new STLLoader();
+                    const geo = await loader.loadAsync(data.stl_url);
+                    geo.rotateX(-Math.PI / 2);
+                    uploadMeshGeo = geo;
+                }
                 updatePreview();
             }
         } catch (err) {
@@ -695,6 +747,14 @@ function readFormParams() {
             size: parseFloat(document.getElementById('shape_size').value),
             height: parseFloat(document.getElementById('shape_height').value),
         },
+        uploaded_offset_x: parseFloat(document.getElementById('upload_offset_x').value) || 0,
+        uploaded_offset_y: parseFloat(document.getElementById('upload_offset_y').value) || 0,
+        uploaded_offset_z: parseFloat(document.getElementById('upload_offset_z').value) || 0,
+        uploaded_rotation_z: parseFloat(document.getElementById('upload_rotation_z').value) || 0,
+        uploaded_flip_x: document.getElementById('upload_flip_x').checked,
+        uploaded_flip_y: document.getElementById('upload_flip_y').checked,
+        uploaded_flip_z: document.getElementById('upload_flip_z').checked,
+        uploaded_scale: parseFloat(document.getElementById('upload_scale').value) || 1.0,
     };
 }
 

@@ -581,6 +581,14 @@ def generate_puck(
     font_size: int = 48,
     text_height: float = 5,
     uploaded_stl_path: Optional[str] = None,
+    uploaded_offset_x: float = 0.0,
+    uploaded_offset_y: float = 0.0,
+    uploaded_offset_z: float = 0.0,
+    uploaded_rotation_z: float = 0.0,
+    uploaded_flip_x: bool = False,
+    uploaded_flip_y: bool = False,
+    uploaded_flip_z: bool = False,
+    uploaded_scale: float = 1.0,
     ai_image_path: Optional[str] = None,
     ai_pregen_mesh_path: Optional[str] = None,
     ai_offset_x: float = 0.0,
@@ -639,7 +647,15 @@ def generate_puck(
     elif top_type == "shape":
         mesh = add_shape(mesh, top_params.get("shape_type", "cube"), top_params)
     elif top_type == "upload" and uploaded_stl_path:
-        mesh = merge_stl(mesh, uploaded_stl_path)
+        mesh = merge_stl(mesh, uploaded_stl_path,
+                         offset_x=uploaded_offset_x,
+                         offset_y=-uploaded_offset_y,
+                         offset_z=uploaded_offset_z,
+                         rotation_z=uploaded_rotation_z,
+                         flip_x=uploaded_flip_x,
+                         flip_y=uploaded_flip_z,
+                         flip_z=uploaded_flip_y,
+                         scale=uploaded_scale)
     elif top_type == "ai_model" and (ai_image_path or ai_pregen_mesh_path):
         if ai_pregen_mesh_path:
             ai_mesh_path = ai_pregen_mesh_path
@@ -689,6 +705,14 @@ def generate_and_export(
     font_size: int = 48,
     text_height: float = 5,
     uploaded_stl_path: Optional[str] = None,
+    uploaded_offset_x: float = 0.0,
+    uploaded_offset_y: float = 0.0,
+    uploaded_offset_z: float = 0.0,
+    uploaded_rotation_z: float = 0.0,
+    uploaded_flip_x: bool = False,
+    uploaded_flip_y: bool = False,
+    uploaded_flip_z: bool = False,
+    uploaded_scale: float = 1.0,
     ai_image_path: Optional[str] = None,
     ai_pregen_mesh_path: Optional[str] = None,
     ai_offset_x: float = 0.0,
@@ -756,6 +780,14 @@ def generate_and_export(
         font_size=font_size,
         text_height=text_height,
         uploaded_stl_path=uploaded_stl_path,
+        uploaded_offset_x=uploaded_offset_x,
+        uploaded_offset_y=uploaded_offset_y,
+        uploaded_offset_z=uploaded_offset_z,
+        uploaded_rotation_z=uploaded_rotation_z,
+        uploaded_flip_x=uploaded_flip_x,
+        uploaded_flip_y=uploaded_flip_y,
+        uploaded_flip_z=uploaded_flip_z,
+        uploaded_scale=uploaded_scale,
         ai_image_path=ai_image_path,
         ai_pregen_mesh_path=ai_pregen_mesh_path,
         ai_offset_x=ai_offset_x,

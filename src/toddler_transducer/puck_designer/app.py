@@ -57,6 +57,15 @@ def api_generate():
     shape_type = data.get("shape_type", "cube")
     shape_params = data.get("shape_params", {})
     ai_image_path = data.get("ai_image_path")
+    uploaded_stl_path = data.get("uploaded_stl_path")
+    uploaded_offset_x = float(data.get("uploaded_offset_x", 0))
+    uploaded_offset_y = float(data.get("uploaded_offset_y", 0))
+    uploaded_offset_z = float(data.get("uploaded_offset_z", 0))
+    uploaded_rotation_z = float(data.get("uploaded_rotation_z", 0))
+    uploaded_flip_x = data.get("uploaded_flip_x", False)
+    uploaded_flip_y = data.get("uploaded_flip_y", False)
+    uploaded_flip_z = data.get("uploaded_flip_z", False)
+    uploaded_scale = float(data.get("uploaded_scale", 1.0))
     base_fillet = float(data.get("base_fillet", 2.0))
     ai_offset_x = float(data.get("ai_offset_x", 0))
     ai_offset_y = float(data.get("ai_offset_y", 0))
@@ -84,6 +93,15 @@ def api_generate():
             font_size=font_size,
             text_height=text_height,
             base_fillet=base_fillet,
+            uploaded_stl_path=uploaded_stl_path,
+            uploaded_offset_x=uploaded_offset_x,
+            uploaded_offset_y=uploaded_offset_y,
+            uploaded_offset_z=uploaded_offset_z,
+            uploaded_rotation_z=uploaded_rotation_z,
+            uploaded_flip_x=uploaded_flip_x,
+            uploaded_flip_y=uploaded_flip_y,
+            uploaded_flip_z=uploaded_flip_z,
+            uploaded_scale=uploaded_scale,
             ai_image_path=ai_image_path,
             ai_offset_x=ai_offset_x,
             ai_offset_y=ai_offset_y,
@@ -252,10 +270,14 @@ def api_download(job_id: str, filename: str):
 def api_upload_stl():
     """Upload a 3D mesh file (STL/3MF/OBJ) for use as a top feature.
 
+    The file is saved into a temp directory so it can be served via the
+    :func:`api_download` route for frontend preview.
+
     Expects a multipart/form-data upload with field name 'stl_file'.
 
     Returns:
-        JSON with 'upload_path' on success, or error with appropriate status.
+        JSON with ``upload_path`` (local filesystem path) and ``stl_url``
+        (download URL) on success, or error with appropriate status.
     """
     if "stl_file" not in request.files:
         return jsonify({"error": "No file provided"}), 400
@@ -268,10 +290,14 @@ def api_upload_stl():
     if suffix.lower() not in (".stl", ".stla", ".stlb", ".3mf", ".obj"):
         return jsonify({"error": f"Unsupported format: {suffix}"}), 400
 
-    temp_path = UPLOAD_DIR / file.filename
+    upload_dir = Path(tempfile.mkdtemp(prefix="puck_upload_"))
+    temp_path = upload_dir / file.filename
     file.save(str(temp_path))
 
-    return jsonify({"upload_path": str(temp_path)})
+    return jsonify({
+        "upload_path": str(temp_path),
+        "stl_url": f"/api/download/{upload_dir.name}/{file.filename}",
+    })
 
 
 @puck_designer_app.route("/api/upload_image", methods=["POST"])
