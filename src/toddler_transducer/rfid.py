@@ -37,4 +37,4 @@ def threaded_get_rfid_id(rfid_tag_proxy: ValueProxy):
     while True:
         rfid_id = get_rfid_id()
         rfid_tag_proxy.value = rfid_id
-        time.sleep(2)
+        time.sleep(0.5)
