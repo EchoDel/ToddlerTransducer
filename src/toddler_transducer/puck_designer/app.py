@@ -61,6 +61,8 @@ def api_generate():
     uploaded_offset_x = float(data.get("uploaded_offset_x", 0))
     uploaded_offset_y = float(data.get("uploaded_offset_y", 0))
     uploaded_offset_z = float(data.get("uploaded_offset_z", 0))
+    uploaded_rotation_x = float(data.get("uploaded_rotation_x", 0))
+    uploaded_rotation_y = float(data.get("uploaded_rotation_y", 0))
     uploaded_rotation_z = float(data.get("uploaded_rotation_z", 0))
     uploaded_flip_x = data.get("uploaded_flip_x", False)
     uploaded_flip_y = data.get("uploaded_flip_y", False)
@@ -70,6 +72,8 @@ def api_generate():
     ai_offset_x = float(data.get("ai_offset_x", 0))
     ai_offset_y = float(data.get("ai_offset_y", 0))
     ai_offset_z = float(data.get("ai_offset_z", 0))
+    ai_rotation_x = float(data.get("ai_rotation_x", 0))
+    ai_rotation_y = float(data.get("ai_rotation_y", 0))
     ai_rotation_z = float(data.get("ai_rotation_z", 0))
     ai_flip_x = data.get("ai_flip_x", False)
     ai_flip_y = data.get("ai_flip_y", False)
@@ -97,6 +101,8 @@ def api_generate():
             uploaded_offset_x=uploaded_offset_x,
             uploaded_offset_y=uploaded_offset_y,
             uploaded_offset_z=uploaded_offset_z,
+            uploaded_rotation_x=uploaded_rotation_x,
+            uploaded_rotation_y=uploaded_rotation_y,
             uploaded_rotation_z=uploaded_rotation_z,
             uploaded_flip_x=uploaded_flip_x,
             uploaded_flip_y=uploaded_flip_y,
@@ -106,6 +112,8 @@ def api_generate():
             ai_offset_x=ai_offset_x,
             ai_offset_y=ai_offset_y,
             ai_offset_z=ai_offset_z,
+            ai_rotation_x=ai_rotation_x,
+            ai_rotation_y=ai_rotation_y,
             ai_rotation_z=ai_rotation_z,
             ai_flip_x=ai_flip_x,
             ai_flip_y=ai_flip_y,
@@ -211,6 +219,8 @@ def api_export_puck():
     ai_offset_x = float(data.get("ai_offset_x", 0))
     ai_offset_y = float(data.get("ai_offset_y", 0))
     ai_offset_z = float(data.get("ai_offset_z", 0))
+    ai_rotation_x = float(data.get("ai_rotation_x", 0))
+    ai_rotation_y = float(data.get("ai_rotation_y", 0))
     ai_rotation_z = float(data.get("ai_rotation_z", 0))
     ai_flip_x = data.get("ai_flip_x", False)
     ai_flip_y = data.get("ai_flip_y", False)
@@ -232,6 +242,8 @@ def api_export_puck():
             ai_offset_x=ai_offset_x,
             ai_offset_y=ai_offset_y,
             ai_offset_z=ai_offset_z,
+            ai_rotation_x=ai_rotation_x,
+            ai_rotation_y=ai_rotation_y,
             ai_rotation_z=ai_rotation_z,
             ai_flip_x=ai_flip_x,
             ai_flip_y=ai_flip_y,

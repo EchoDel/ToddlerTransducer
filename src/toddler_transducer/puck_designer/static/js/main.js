@@ -235,10 +235,12 @@ function createPreviewMesh() {
             const fx = document.getElementById('upload_flip_x').checked;
             const fy = document.getElementById('upload_flip_y').checked;
             const fz = document.getElementById('upload_flip_z').checked;
-            const rot = parseFloat(document.getElementById('upload_rotation_z').value);
+            const rotX = parseFloat(document.getElementById('upload_rotation_x').value);
+            const rotY = parseFloat(document.getElementById('upload_rotation_y').value);
+            const rotZ = parseFloat(document.getElementById('upload_rotation_z').value);
 
             mesh.scale.set(scale * (fx ? -1 : 1), scale * (fy ? -1 : 1), scale * (fz ? -1 : 1));
-            mesh.rotation.y = rot * Math.PI / 180;
+            mesh.rotation.set(rotX * Math.PI / 180, rotY * Math.PI / 180, rotZ * Math.PI / 180);
 
             const bbox = new THREE.Box3().setFromObject(mesh);
             const halfH = (bbox.max.y - bbox.min.y) / 2;
@@ -279,10 +281,12 @@ function createPreviewMesh() {
             const fx = document.getElementById('ai_flip_x').checked;
             const fy = document.getElementById('ai_flip_y').checked;
             const fz = document.getElementById('ai_flip_z').checked;
-            const rot = parseFloat(document.getElementById('ai_rotation_z').value);
+            const rotX = parseFloat(document.getElementById('ai_rotation_x').value);
+            const rotY = parseFloat(document.getElementById('ai_rotation_y').value);
+            const rotZ = parseFloat(document.getElementById('ai_rotation_z').value);
 
             mesh.scale.set(scale * (fx ? -1 : 1), scale * (fy ? -1 : 1), scale * (fz ? -1 : 1));
-            mesh.rotation.y = rot * Math.PI / 180;
+            mesh.rotation.set(rotX * Math.PI / 180, rotY * Math.PI / 180, rotZ * Math.PI / 180);
 
             const bbox = new THREE.Box3().setFromObject(mesh);
             const halfH = (bbox.max.y - bbox.min.y) / 2;
@@ -424,11 +428,15 @@ const sliderConfig = [
     { id: 'ai_offset_x', valId: 'ai_offset_x_val', decimals: 1 },
     { id: 'ai_offset_y', valId: 'ai_offset_y_val', decimals: 1 },
     { id: 'ai_offset_z', valId: 'ai_offset_z_val', decimals: 1 },
+    { id: 'ai_rotation_x', valId: 'ai_rotation_x_val', decimals: 0 },
+    { id: 'ai_rotation_y', valId: 'ai_rotation_y_val', decimals: 0 },
     { id: 'ai_rotation_z', valId: 'ai_rotation_z_val', decimals: 0 },
     { id: 'ai_scale', valId: 'ai_scale_val', decimals: 1 },
     { id: 'upload_offset_x', valId: 'upload_offset_x_val', decimals: 1 },
     { id: 'upload_offset_y', valId: 'upload_offset_y_val', decimals: 1 },
     { id: 'upload_offset_z', valId: 'upload_offset_z_val', decimals: 1 },
+    { id: 'upload_rotation_x', valId: 'upload_rotation_x_val', decimals: 0 },
+    { id: 'upload_rotation_y', valId: 'upload_rotation_y_val', decimals: 0 },
     { id: 'upload_rotation_z', valId: 'upload_rotation_z_val', decimals: 0 },
     { id: 'upload_scale', valId: 'upload_scale_val', decimals: 1 },
 ];
@@ -648,6 +656,8 @@ async function exportAiPuck(format) {
         ai_offset_x: parseFloat(document.getElementById('ai_offset_x').value) || 0,
         ai_offset_y: parseFloat(document.getElementById('ai_offset_y').value) || 0,
         ai_offset_z: parseFloat(document.getElementById('ai_offset_z').value) || 0,
+        ai_rotation_x: parseFloat(document.getElementById('ai_rotation_x').value) || 0,
+        ai_rotation_y: parseFloat(document.getElementById('ai_rotation_y').value) || 0,
         ai_rotation_z: parseFloat(document.getElementById('ai_rotation_z').value) || 0,
         ai_flip_x: document.getElementById('ai_flip_x').checked,
         ai_flip_y: document.getElementById('ai_flip_y').checked,
@@ -750,6 +760,8 @@ function readFormParams() {
         uploaded_offset_x: parseFloat(document.getElementById('upload_offset_x').value) || 0,
         uploaded_offset_y: parseFloat(document.getElementById('upload_offset_y').value) || 0,
         uploaded_offset_z: parseFloat(document.getElementById('upload_offset_z').value) || 0,
+        uploaded_rotation_x: parseFloat(document.getElementById('upload_rotation_x').value) || 0,
+        uploaded_rotation_y: parseFloat(document.getElementById('upload_rotation_y').value) || 0,
         uploaded_rotation_z: parseFloat(document.getElementById('upload_rotation_z').value) || 0,
         uploaded_flip_x: document.getElementById('upload_flip_x').checked,
         uploaded_flip_y: document.getElementById('upload_flip_y').checked,

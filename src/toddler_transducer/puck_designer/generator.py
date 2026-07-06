@@ -16,8 +16,8 @@ from trimesh.creation import extrude_polygon
 FONT_PATH = Path("/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf")
 DEFAULT_BASE_DIAMETER = 50
 DEFAULT_BASE_THICKNESS = 3
-DEFAULT_HOLE_DIAMETER = 25
-DEFAULT_HOLE_HEIGHT = 2
+DEFAULT_HOLE_DIAMETER = 30
+DEFAULT_HOLE_HEIGHT = 0.6
 DEFAULT_HOLE_BOTTOM_OFFSET = 0.5
 
 
@@ -485,6 +485,8 @@ def merge_stl(
     offset_x: float = 0.0,
     offset_y: float = 0.0,
     offset_z: float = 0.0,
+    rotation_x: float = 0.0,
+    rotation_y: float = 0.0,
     rotation_z: float = 0.0,
     flip_x: bool = False,
     flip_y: bool = False,
@@ -493,7 +495,7 @@ def merge_stl(
 ) -> trimesh.Trimesh:
     """Load an external mesh, apply transforms, and merge it with the base.
 
-    Transform order: scale → flip X/Y/Z → rotate Z → center → XY offset →
+    Transform order: scale → flip X/Y/Z → rotate X/Y/Z → center → XY offset →
     Z lift + offset_z → CSG union.
 
     Args:
@@ -502,6 +504,8 @@ def merge_stl(
         offset_x: X offset after centering.
         offset_y: Y offset after centering.
         offset_z: Additional Z offset on top of the automatic Z lift.
+        rotation_x: X-axis rotation in degrees.
+        rotation_y: Y-axis rotation in degrees.
         rotation_z: Z-axis rotation in degrees.
         flip_x: Mirror along X axis.
         flip_y: Mirror along Y axis.
@@ -525,9 +529,19 @@ def merge_stl(
     if flip_z:
         uploaded.vertices[:, 2] *= -1
 
-    if rotation_z != 0.0:
-        angle = math.radians(rotation_z)
-        rot = trimesh.transformations.rotation_matrix(angle, [0, 0, 1])
+    if rotation_x != 0.0 or rotation_y != 0.0 or rotation_z != 0.0:
+        # Frontend (Three.js) converts the mesh from Z-up to Y-up via
+        # geo.rotateX(-PI/2) before applying rotations from the sliders.
+        # This means slider rotations operate in Y-up space there, but the
+        # backend operates in Z-up space.  Remap the rotation axes so the
+        # exported result matches the preview:
+        #   Frontend Y → Backend Z
+        #   Frontend Z → Backend -Y
+        rot = (
+            trimesh.transformations.rotation_matrix(math.radians(-rotation_z), [0, 1, 0])
+            @ trimesh.transformations.rotation_matrix(math.radians(rotation_y), [0, 0, 1])
+            @ trimesh.transformations.rotation_matrix(math.radians(rotation_x), [1, 0, 0])
+        )
         uploaded.apply_transform(rot)
 
     uploaded.vertices -= uploaded.center_mass
@@ -584,6 +598,8 @@ def generate_puck(
     uploaded_offset_x: float = 0.0,
     uploaded_offset_y: float = 0.0,
     uploaded_offset_z: float = 0.0,
+    uploaded_rotation_x: float = 0.0,
+    uploaded_rotation_y: float = 0.0,
     uploaded_rotation_z: float = 0.0,
     uploaded_flip_x: bool = False,
     uploaded_flip_y: bool = False,
@@ -594,6 +610,8 @@ def generate_puck(
     ai_offset_x: float = 0.0,
     ai_offset_y: float = 0.0,
     ai_offset_z: float = 0.0,
+    ai_rotation_x: float = 0.0,
+    ai_rotation_y: float = 0.0,
     ai_rotation_z: float = 0.0,
     ai_flip_x: bool = False,
     ai_flip_y: bool = False,
@@ -624,6 +642,8 @@ def generate_puck(
         ai_offset_x: X offset for the AI model on the puck.
         ai_offset_y: Y offset for the AI model on the puck.
         ai_offset_z: Additional Z offset for the AI model.
+        ai_rotation_x: X rotation for the AI model in degrees.
+        ai_rotation_y: Y rotation for the AI model in degrees.
         ai_rotation_z: Z rotation for the AI model in degrees.
         ai_flip_x: Mirror AI model along X.
         ai_flip_y: Mirror AI model along Y.
@@ -651,6 +671,8 @@ def generate_puck(
                          offset_x=uploaded_offset_x,
                          offset_y=-uploaded_offset_y,
                          offset_z=uploaded_offset_z,
+                         rotation_x=uploaded_rotation_x,
+                         rotation_y=uploaded_rotation_y,
                          rotation_z=uploaded_rotation_z,
                          flip_x=uploaded_flip_x,
                          flip_y=uploaded_flip_z,
@@ -666,7 +688,8 @@ def generate_puck(
                 from .inference_instant_mesh import generate_mesh_from_image
             ai_mesh_path = generate_mesh_from_image(ai_image_path, diffusion_steps=64)
         mesh = merge_stl(mesh, str(ai_mesh_path), offset_x=ai_offset_x, offset_y=-ai_offset_y,
-                         offset_z=ai_offset_z, rotation_z=ai_rotation_z, flip_x=ai_flip_x,
+                         offset_z=ai_offset_z, rotation_x=ai_rotation_x, rotation_y=ai_rotation_y,
+                         rotation_z=ai_rotation_z, flip_x=ai_flip_x,
                          flip_y=ai_flip_z, flip_z=ai_flip_y, scale=ai_scale)
 
     return mesh, ai_mesh_path
@@ -708,6 +731,8 @@ def generate_and_export(
     uploaded_offset_x: float = 0.0,
     uploaded_offset_y: float = 0.0,
     uploaded_offset_z: float = 0.0,
+    uploaded_rotation_x: float = 0.0,
+    uploaded_rotation_y: float = 0.0,
     uploaded_rotation_z: float = 0.0,
     uploaded_flip_x: bool = False,
     uploaded_flip_y: bool = False,
@@ -718,6 +743,8 @@ def generate_and_export(
     ai_offset_x: float = 0.0,
     ai_offset_y: float = 0.0,
     ai_offset_z: float = 0.0,
+    ai_rotation_x: float = 0.0,
+    ai_rotation_y: float = 0.0,
     ai_rotation_z: float = 0.0,
     ai_flip_x: bool = False,
     ai_flip_y: bool = False,
@@ -749,6 +776,8 @@ def generate_and_export(
         ai_offset_x: X offset for the AI model on the puck.
         ai_offset_y: Y offset for the AI model on the puck.
         ai_offset_z: Additional Z offset for the AI model.
+        ai_rotation_x: X rotation for the AI model in degrees.
+        ai_rotation_y: Y rotation for the AI model in degrees.
         ai_rotation_z: Z rotation for the AI model in degrees.
         ai_flip_x: Mirror AI model along X.
         ai_flip_y: Mirror AI model along Y.
@@ -783,6 +812,8 @@ def generate_and_export(
         uploaded_offset_x=uploaded_offset_x,
         uploaded_offset_y=uploaded_offset_y,
         uploaded_offset_z=uploaded_offset_z,
+        uploaded_rotation_x=uploaded_rotation_x,
+        uploaded_rotation_y=uploaded_rotation_y,
         uploaded_rotation_z=uploaded_rotation_z,
         uploaded_flip_x=uploaded_flip_x,
         uploaded_flip_y=uploaded_flip_y,
@@ -793,6 +824,8 @@ def generate_and_export(
         ai_offset_x=ai_offset_x,
         ai_offset_y=ai_offset_y,
         ai_offset_z=ai_offset_z,
+        ai_rotation_x=ai_rotation_x,
+        ai_rotation_y=ai_rotation_y,
         ai_rotation_z=ai_rotation_z,
         ai_flip_x=ai_flip_x,
         ai_flip_y=ai_flip_y,
