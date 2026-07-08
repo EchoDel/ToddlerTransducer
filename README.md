@@ -76,6 +76,7 @@ Loop VLC, https://stackoverflow.com/questions/7214843/repeating-single-movie-usi
 
 1. Set up a new raspberry pi
 2. Install VLC
+   * `sudo apt install vlc`
 3. clone the git repo,
    * `git clone https://github.com/EchoDel/ToddlerTransducer.git`
 4. Change to that folder

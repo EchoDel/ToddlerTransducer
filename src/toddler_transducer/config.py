@@ -12,6 +12,9 @@ BACKUP_FILE_BASE_PATH.mkdir(parents=True, exist_ok=True)
 
 VOLUME_FILE_PATH = Path('./persistent_settings.json')
 
+# AI model backend selection — "hunyuan3d" or "instantmesh"
+AI_MODEL_BACKEND = "hunyuan3d"
+
 # GPIO pins
 LOOPING_SENSE_PIN = 38
 LOOPING_INDICATOR_PIN = 40
