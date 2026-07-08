@@ -1,10 +1,7 @@
 import math
-import sys
 import tempfile
 from pathlib import Path
 from typing import Any, Optional
-
-from ..config import AI_MODEL_BACKEND
 
 import freetype
 import numpy as np
@@ -12,6 +9,8 @@ import trimesh
 from shapely.geometry import Polygon as ShapelyPolygon
 from shapely.ops import unary_union
 from trimesh.creation import extrude_polygon
+
+from ..config import AI_MODEL_BACKEND
 
 FONT_PATH = Path("/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf")
 DEFAULT_BASE_DIAMETER = 50
