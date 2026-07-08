@@ -102,13 +102,13 @@ class RotaryEncoderVolume:
             else:
                 self.counter -= 1
 
-            if self.counter >= self.steps_per_notch:
+            if self.counter >= self.notch_per_step:
                 self.counter = 0
                 current_vol = vlc_playback_manager.get('volume', 50)
                 new_vol = max(0, min(100, current_vol + self.volume_per_step))
                 vlc_playback_manager['volume'] = new_vol
                 save_volume(new_vol)
-            elif self.counter <= -self.steps_per_notch:
+            elif self.counter <= -self.notch_per_step:
                 self.counter = 0
                 current_vol = vlc_playback_manager.get('volume', 50)
                 new_vol = max(0, min(100, current_vol - self.volume_per_step))
