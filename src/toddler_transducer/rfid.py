@@ -26,13 +26,11 @@ def get_rfid_id() -> int | None:
         rfid_id = reader.read_id_no_block()
     return rfid_id
 
-def threaded_get_rfid_id(rfid_tag_proxy: ValueProxy):
-    """
-    Gets the current RFID ID sector from the reader and adds it to the rfid_tag_proxy
+def threaded_get_rfid_id(rfid_tag_proxy: ValueProxy) -> None:
+    """Infinite loop that reads RFID ID and updates the shared proxy every 2 s.
 
     Args:
-        rfid_tag_proxy (ValueProxy): The object providing a .value items which can be filled with the current rfid tag
-         id.
+        rfid_tag_proxy (ValueProxy): Proxy whose .value is set to the current RFID tag id.
     """
     while True:
         rfid_id = get_rfid_id()

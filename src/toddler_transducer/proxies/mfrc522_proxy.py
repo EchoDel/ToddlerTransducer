@@ -6,13 +6,15 @@ Module containing the code needed to proxy the MFRC522 rfid reader class when no
 import random
 from typing import Optional
 
-def validate_value(value_chance: float, value_name: str):
-    """
-    Validates a value is within the allowed range.
+def validate_value(value_chance: float, value_name: str) -> None:
+    """Validate that a probability value is between 0 and 1.
 
     Args:
-        value_chance (float): The chance of changing the value.
-        value_name (str): The name of the value to validate.
+        value_chance (float): The value to validate.
+        value_name (str): Name of the value for error messages.
+
+    Raises:
+        ValueError: If value_chance is outside [0, 1].
     """
     if value_chance is not None:
         if (value_chance < 0) or (value_chance > 1):

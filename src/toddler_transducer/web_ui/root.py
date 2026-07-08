@@ -4,7 +4,6 @@ Web UI Root
 Module containing all of the routes for the root page of the application.
 """
 import subprocess
-import sys
 from multiprocessing import Process
 from multiprocessing.managers import ValueProxy, DictProxy
 from pathlib import Path
@@ -20,16 +19,22 @@ from toddler_transducer.config import AUDIO_FILE_BASE_PATH
 from toddler_transducer.metadata import append_to_metadata, load_metadata, remove_from_metadata_by_track_name
 
 
-def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_manager: DictProxy):
-    """
-    Add routes for the root page of the application.
+def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy,
+                    vlc_playback_manager: DictProxy) -> None:
+    """Register all web UI routes on the Flask app.
 
     Args:
-        flask_app (Flask): Flask application instance to add routes to.
-        rfid_tag_proxy (ValueProxy): Rfid tag proxy instance.
+        flask_app: Flask application instance.
+        rfid_tag_proxy: Proxy for the current RFID tag id.
+        vlc_playback_manager: Shared dict for VLC control and state.
     """
 
-    def resolve_track_name(track_uuid: str):
+    def resolve_track_name(track_uuid: str | None) -> str:
+        """Look up the display name for a track UUID.
+
+        Returns:
+            str: The track display name, or 'Load Track' if unknown.
+        """
         if track_uuid is None:
             return 'Load Track'
         meta = load_metadata()
@@ -38,6 +43,7 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
 
     @flask_app.route('/')
     def home() -> str:
+        """Render the home page with player state and track list."""
         playable_tracks = get_current_files()
         current_track_uuid = vlc_playback_manager['current_playing_track_uuid']
         track_names = list(playable_tracks.keys())
@@ -75,15 +81,7 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
 
     @flask_app.route('/play_track', methods=['POST'])
     def play_track():
-
-        # if request.form['AudioTrackName'] not in playable_tracks:
-        #     if 'Playing' in request.form:
-        #         vlc_playback_manager['do_pause'] = True
-        #     else:
-        #         vlc_playback_manager['do_play'] = True
-        #     return redirect(request.referrer)
-        # Play the audio track
-
+        """Play a track selected via form submission."""
         playable_tracks = get_current_files()
         vlc_playback_manager['play_rfid_id'] = False
         vlc_playback_manager['play_track_name'] = playable_tracks[request.form['AudioTrackName']]
@@ -92,12 +90,13 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
 
     @flask_app.route('/pause', methods=['POST'])
     def pause_track():
+        """Pause playback via form submission."""
         vlc_playback_manager['do_pause'] = True
         return redirect(request.referrer)
 
     @flask_app.route('/upload_track', methods=['POST'])
     def upload_track():
-        # Play the audio track
+        """Upload an audio file and create a metadata entry."""
         if ('TrackFile' in request.files) and ('current_puck_id' in session):
             file = request.files['TrackFile']
             filename = secure_filename(file.filename)
@@ -117,6 +116,7 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
 
     @flask_app.route('/api/seek', methods=['POST'])
     def api_seek():
+        """Seek to a position in the current track."""
         data = request.get_json()
         if data and 'position' in data:
             vlc_playback_manager['seek_position'] = float(data['position'])
@@ -124,6 +124,7 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
 
     @flask_app.route('/api/volume', methods=['POST'])
     def api_volume():
+        """Set the playback volume."""
         data = request.get_json()
         if data and 'volume' in data:
             vol = max(0, min(100, int(data['volume'])))
@@ -133,10 +134,12 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
 
     @flask_app.route('/api/puck_lockout', methods=['GET'])
     def api_get_puck_lockout():
+        """Return the current puck lockout state."""
         return {'puck_lockout': vlc_playback_manager.get('puck_lockout', False)}
 
     @flask_app.route('/api/puck_lockout', methods=['POST'])
     def api_set_puck_lockout():
+        """Set the puck lockout state."""
         data = request.get_json()
         if data and 'puck_lockout' in data:
             locked = bool(data['puck_lockout'])
@@ -146,6 +149,7 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
 
     @flask_app.route('/api/player_state')
     def api_player_state():
+        """Return the full player state as JSON."""
         current_track_uuid = vlc_playback_manager['current_playing_track_uuid']
         track_name = resolve_track_name(current_track_uuid)
         return {
@@ -160,6 +164,7 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
 
     @flask_app.route('/api/play_track', methods=['POST'])
     def api_play_track():
+        """Play a track by name via JSON API."""
         data = request.get_json()
         if data and 'track_name' in data:
             playable_tracks = get_current_files()
@@ -171,6 +176,7 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
 
     @flask_app.route('/api/toggle_playback', methods=['POST'])
     def api_toggle_playback():
+        """Toggle between play and pause."""
         if vlc_playback_manager['is_playing']:
             vlc_playback_manager['do_pause'] = True
         else:
@@ -179,11 +185,13 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
 
     @flask_app.route('/api/toggle_loop', methods=['POST'])
     def api_toggle_loop():
+        """Toggle looping on the current track."""
         vlc_playback_manager['toggle_looping'] = True
         return {'ok': True}
 
     @flask_app.route('/api/tracks')
     def api_tracks():
+        """Return a list of track entries with UUIDs."""
         playable_tracks = get_current_files()
         meta = load_metadata()
         entries = []
@@ -196,6 +204,7 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
 
     @flask_app.route('/api/disk_usage')
     def api_disk_usage():
+        """Return disk usage stats for the audio files directory."""
         usage = disk_usage(AUDIO_FILE_BASE_PATH)
         return {
             'total': usage.total,
@@ -205,6 +214,7 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
 
     @flask_app.route('/api/delete_track', methods=['POST'])
     def api_delete_track():
+        """Delete a track by name via JSON API."""
         data = request.get_json()
         if data and 'track_name' in data:
             removed = remove_from_metadata_by_track_name(data['track_name'])
@@ -220,11 +230,13 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
 
     @flask_app.route('/loop_track', methods=['POST'])
     def loop_track():
+        """Toggle looping via form submission."""
         vlc_playback_manager['toggle_looping'] = True
         return redirect(request.referrer)
 
     @flask_app.route('/backup_audio', methods=['GET'])
     def download_backup():
+        """Download the latest audio backup ZIP."""
         latest_backup = get_sorted_backup_item(-1)
         backup_location = next(iter(latest_backup.values()))
         backup_location = Path(__file__).parents[3] / backup_location
@@ -233,6 +245,7 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy, vlc_playback_m
 
     @flask_app.route('/api/restart_service', methods=['POST'])
     def api_restart_service():
+        """Restart the systemd ToddlerTransducer service."""
         try:
             subprocess.Popen(
                 ['sudo', 'systemctl', 'restart', 'ToddlerTransducer.service'],

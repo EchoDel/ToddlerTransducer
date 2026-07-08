@@ -1,8 +1,8 @@
 import tempfile
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
-import numpy as np
+from PIL import Image
 import torch
 from hy3dgen.rembg import BackgroundRemover
 from hy3dgen.shapegen import Hunyuan3DDiTFlowMatchingPipeline
@@ -13,8 +13,7 @@ BACKEND_NAME = "hunyuan3d"
 def _process_input_image(
     image_path: str,
     no_rembg: bool = False,
-) -> "Image.Image":
-    from PIL import Image
+) -> Image.Image:
 
     image = Image.open(image_path)
     if image.mode == "RGBA":

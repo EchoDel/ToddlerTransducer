@@ -39,7 +39,7 @@ def load_metadata() -> Metadata:
 
 def save_metadata(metadata):
     """
-    Saves the metadata of the audio files.
+    Saves the metadata of the audio files backing up the prior version first.
 
     Args:
         metadata (Metadata): The metadata of the audio files to be saved.
