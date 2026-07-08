@@ -22,6 +22,7 @@ def switch_print(p: bool):
 
 
 def printf(f):
+    """Decorator that prints function calls when PRINT_ON is True."""
     @wraps(f)
     def wrapped(*args, **kwargs):
         r = f(*args, **kwargs)
@@ -53,7 +54,9 @@ def switch_randomize_inputs(p: bool):
 
 
 class Base:
-    def __init__(self, name=None):
+    """Base class that prints a warning when using fake Raspberry Pi interfaces."""
+
+    def __init__(self, name: str | None = None) -> None:
         print('<<< WARNING: using fake raspberry pi interfaces >>>')
         if name:
             print(f'<<< Using: {name} >>>')
@@ -62,22 +65,24 @@ class Base:
 class _GPIO(Base):
 
     class PWM(Base):
+        """Software PWM emulation."""
+
         @printf
-        def __init__(self, channel=0, frequency=0):
+        def __init__(self, channel: int = 0, frequency: int = 0) -> None:
             Base.__init__(self, self.__class__)
 
         @printf
-        def start(self, dc):
-            pass
+        def start(self, dc: float) -> None:
+            """Start PWM with the given duty cycle."""
 
-        def stop(self):
-            pass
+        def stop(self) -> None:
+            """Stop PWM."""
 
-        def ChangeDutyCycle(self, dc):
-            pass
+        def ChangeDutyCycle(self, dc: float) -> None:
+            """Change the PWM duty cycle."""
 
-        def ChangeFrequency(self, frequency):
-            pass
+        def ChangeFrequency(self, frequency: int) -> None:
+            """Change the PWM frequency."""
 
     # Values
     LOW = 0
@@ -110,28 +115,35 @@ class _GPIO(Base):
     RPI_REVISION = 2
     VERSION = '0.5.6'
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialise the fake GPIO with 40 input pins."""
         Base.__init__(self, self.__class__)
         self._inputs = [None] * 40  # We have 40 input pins
 
     @printf
-    def setwarnings(self, a):
-        pass
+    def setwarnings(self, a: bool) -> None:
+        """Set GPIO warning state (no-op in fake)."""
 
     @printf
-    def setmode(self, a):
-        pass
+    def setmode(self, a: int) -> None:
+        """Set GPIO mode (no-op in fake)."""
 
     @printf
-    def getmode(self):
+    def getmode(self) -> int:
+        """Return the BCM mode constant."""
         return GPIO.BCM
 
     @printf
-    def setup(self, channel, state, initial=0, pull_up_down=None):
-        pass
+    def setup(self, channel: int, state: int, initial: int = 0, pull_up_down: int | None = None) -> None:
+        """Set up a GPIO channel (no-op in fake)."""
 
     @printf
-    def input(self, channel):
+    def input(self, channel: int) -> int:
+        """Read a GPIO input value.
+
+        Returns:
+            int: The manually set value, a random value, or 0.
+        """
         if 0 <= channel < len(self._inputs) and self._inputs[channel] is not None:
             return self._inputs[channel]
         if RANDOMIZE_INPUT:
@@ -139,39 +151,42 @@ class _GPIO(Base):
         return 0
 
     @printf
-    def set_input(self, channel, value):
+    def set_input(self, channel: int, value: int) -> None:
+        """Manually set a GPIO input pin value."""
         self._inputs[channel] = value
 
     @printf
-    def cleanup(self, a=None):
-        pass
+    def cleanup(self, a: int | None = None) -> None:
+        """Clean up GPIO channels (no-op in fake)."""
 
     @printf
-    def output(self, channel, state):
-        pass
+    def output(self, channel: int, state: int) -> None:
+        """Set a GPIO output value (no-op in fake)."""
 
     @printf
-    def wait_for_edge(self, channel, edge):
-        pass
+    def wait_for_edge(self, channel: int, edge: int) -> None:
+        """Wait for a GPIO edge (no-op in fake)."""
 
     @printf
-    def add_event_detect(self, channel, edge, callback=None, bouncetime=None):
-        pass
+    def add_event_detect(self, channel: int, edge: int, callback=None, bouncetime: int | None = None) -> None:
+        """Add edge detection (no-op in fake)."""
 
     @printf
-    def add_event_callback(self, channel, callback=None):
-        pass
+    def add_event_callback(self, channel: int, callback=None) -> None:
+        """Add edge callback (no-op in fake)."""
 
     @printf
-    def remove_event_detect(self, channel):
-        pass
+    def remove_event_detect(self, channel: int) -> None:
+        """Remove edge detection (no-op in fake)."""
 
     @printf
-    def event_detected(self, channel):
+    def event_detected(self, channel: int) -> bool:
+        """Check if an event has been detected (always False in fake)."""
         return False
 
     @printf
-    def gpio_function(self, channel):
+    def gpio_function(self, channel: int) -> int:
+        """Return the OUT function constant."""
         return GPIO.OUT
 
 

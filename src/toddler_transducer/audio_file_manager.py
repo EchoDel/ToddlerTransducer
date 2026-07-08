@@ -13,12 +13,11 @@ from toddler_transducer.config import AUDIO_FILE_BASE_PATH, BACKUP_FILE_BASE_PAT
 from toddler_transducer.metadata import load_metadata
 
 
-def get_current_files() -> dict[str, Path]:
-    """
-    Get current audio file paths.
+def get_current_files() -> dict[str, str]:
+    """Get current audio file paths keyed by track name.
 
     Returns:
-        dict[str, Path]: The current audio file paths.
+        dict[str, str]: Mapping of track name to file name.
     """
     metadata = load_metadata()
     return {x['track_name']: x['file_name'] for x in metadata.values()}
@@ -42,12 +41,11 @@ def load_backup_metadata() -> dict[datetime, str]:
     return backup_list
 
 
-def save_backup_metadata(backup_list: dict[datetime, str]):
-    """
-    Save the backup metadata to disk.
+def save_backup_metadata(backup_list: dict[datetime, str]) -> None:
+    """Save the backup metadata to disk.
 
     Args:
-        backup_list (dict[datetime, str]): The backup metadata.:
+        backup_list (dict[datetime, str]): The backup metadata.
     """
     backup_list_file = BACKUP_FILE_BASE_PATH / 'backup_list.json'
     backup_list = {key.strftime('%Y%m%d%H%M%S'): value for key, value in backup_list.items()}
@@ -58,15 +56,14 @@ def save_backup_metadata(backup_list: dict[datetime, str]):
 
 def delete_old_backups(backups_to_delete: dict[datetime, str],
                        prior_backups: dict[datetime, str]) -> dict[datetime, str]:
-    """
-    Delete old backups.
+    """Delete old backup ZIP files and return the updated backup dict.
 
     Args:
-        backups_to_delete dict[datetime, str]: The backups to delete.
-        prior_backups (dict[datetime, str]): All dict of all backups.
+        backups_to_delete (dict[datetime, str]): The backups to delete.
+        prior_backups (dict[datetime, str]): All prior backups.
 
     Returns:
-        dict[datetime, str]: The new backup metadat with the old backups deleted.
+        dict[datetime, str]: The updated backup metadata with old backups removed.
     """
     # Delete the old backups
     for backup_key, backup_path in backups_to_delete.items():
@@ -75,15 +72,16 @@ def delete_old_backups(backups_to_delete: dict[datetime, str],
     return prior_backups
 
 
-def get_sorted_backup_item(location: int) ->  dict[datetime, str]:
-    """
-    Gets the single item from the backup list.
+def get_sorted_backup_item(location: int) -> dict[datetime, str]:
+    """Get a single item from the sorted backup list by index.
+
+    Positive index = oldest-first; negative index = newest-first.
 
     Args:
-        location int: The location of the item.
+        location (int): The index of the item.
 
     Returns:
-         dict[datetime, str]: The single value from the backup dict.
+        dict[datetime, str]: The single value from the backup dict.
     """
     prior_backups = load_backup_metadata()
     if location < 0:
@@ -95,10 +93,8 @@ def get_sorted_backup_item(location: int) ->  dict[datetime, str]:
     return dict(itertools.islice(sorted_dict.items(), location))
 
 
-def backup_audio_files():
-    """
-    Runs the full backup process creating a zip of the audio files folder and a metadata record for the backup.
-    """
+def backup_audio_files() -> None:
+    """Run the full backup process: zip audio files, register metadata, prune old backups."""
     prior_backups = load_backup_metadata()
     backup_time = datetime.now()
     backup_file = BACKUP_FILE_BASE_PATH / f'backup_{backup_time.strftime("%Y%m%d%H%M%S")}'

@@ -1,7 +1,7 @@
 import pytest
 
 from toddler_transducer.proxies.fake_raspberry_pi import _GPIO as FakeGPIO
-from toddler_transducer.config import ENCODER_VOLUME_STEPS_PER_NOTCH
+from toddler_transducer.config import ENCODER_VOLUME_NOTCH_PER_STEP, ENCODER_VOLUME_INCREASE_PER_STEP
 
 
 @pytest.fixture(autouse=True)
@@ -88,7 +88,7 @@ class TestRotaryEncoderVolume:
         fake = FakeGPIO()
         monkeypatch.setattr('toddler_transducer.gpio.GPIO', fake)
         from toddler_transducer.gpio import RotaryEncoderVolume
-        return RotaryEncoderVolume(3, 4, ENCODER_VOLUME_STEPS_PER_NOTCH), fake
+        return RotaryEncoderVolume(3, 4, ENCODER_VOLUME_NOTCH_PER_STEP, ENCODER_VOLUME_INCREASE_PER_STEP), fake
 
     @pytest.fixture
     def vlc_mgr(self):
@@ -115,48 +115,48 @@ class TestRotaryEncoderVolume:
     def test_initial_state(self, encoder_and_gpio):
         encoder, _ = encoder_and_gpio
         assert encoder.counter == 0
-        assert encoder.steps_per_notch == ENCODER_VOLUME_STEPS_PER_NOTCH
+        assert encoder.notch_per_step == ENCODER_VOLUME_NOTCH_PER_STEP
 
     def test_cw_increases_volume(self, encoder_and_gpio, vlc_mgr):
         encoder, gpio = encoder_and_gpio
-        for i in range(ENCODER_VOLUME_STEPS_PER_NOTCH):
+        for i in range(ENCODER_VOLUME_NOTCH_PER_STEP):
             self._cw_step(encoder, gpio, vlc_mgr, i + 1)
-        assert vlc_mgr['volume'] == 51
+        assert vlc_mgr['volume'] == 50 + ENCODER_VOLUME_INCREASE_PER_STEP
 
     def test_ccw_decreases_volume(self, encoder_and_gpio, vlc_mgr):
         encoder, gpio = encoder_and_gpio
         vlc_mgr['volume'] = 50
-        for i in range(ENCODER_VOLUME_STEPS_PER_NOTCH):
+        for i in range(ENCODER_VOLUME_NOTCH_PER_STEP):
             self._ccw_step(encoder, gpio, vlc_mgr, i + 1)
-        assert vlc_mgr['volume'] == 49
+        assert vlc_mgr['volume'] == 50 - ENCODER_VOLUME_INCREASE_PER_STEP
 
     def test_volume_clamps_at_100(self, encoder_and_gpio, vlc_mgr):
         encoder, gpio = encoder_and_gpio
         vlc_mgr['volume'] = 100
-        for i in range(ENCODER_VOLUME_STEPS_PER_NOTCH):
+        for i in range(ENCODER_VOLUME_NOTCH_PER_STEP):
             self._cw_step(encoder, gpio, vlc_mgr, i + 1)
         assert vlc_mgr['volume'] == 100
 
     def test_volume_clamps_at_0(self, encoder_and_gpio, vlc_mgr):
         encoder, gpio = encoder_and_gpio
         vlc_mgr['volume'] = 0
-        for i in range(ENCODER_VOLUME_STEPS_PER_NOTCH):
+        for i in range(ENCODER_VOLUME_NOTCH_PER_STEP):
             self._ccw_step(encoder, gpio, vlc_mgr, i + 1)
         assert vlc_mgr['volume'] == 0
 
     def test_partial_turn_does_not_change_volume(self, encoder_and_gpio, vlc_mgr):
         encoder, gpio = encoder_and_gpio
         vlc_mgr['volume'] = 50
-        for i in range(ENCODER_VOLUME_STEPS_PER_NOTCH - 1):
+        for i in range(ENCODER_VOLUME_NOTCH_PER_STEP - 1):
             self._cw_step(encoder, gpio, vlc_mgr, i + 1)
         assert vlc_mgr['volume'] == 50
 
     def test_cw_then_ccw_cancels(self, encoder_and_gpio, vlc_mgr):
         encoder, gpio = encoder_and_gpio
         vlc_mgr['volume'] = 50
-        for i in range(ENCODER_VOLUME_STEPS_PER_NOTCH // 2):
+        for i in range(ENCODER_VOLUME_NOTCH_PER_STEP // 2):
             self._cw_step(encoder, gpio, vlc_mgr, i + 1)
-        for i in range(ENCODER_VOLUME_STEPS_PER_NOTCH // 2):
+        for i in range(ENCODER_VOLUME_NOTCH_PER_STEP // 2):
             self._ccw_step(encoder, gpio, vlc_mgr, i + 1)
         assert vlc_mgr['volume'] == 50
 

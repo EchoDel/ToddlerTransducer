@@ -10,7 +10,8 @@ from RPi import GPIO
 
 from toddler_transducer.audio import save_volume
 from toddler_transducer.config import LOOPING_SENSE_PIN, LOOPING_INDICATOR_PIN, WIFI_SENSE_PIN, WIFI_INDICATOR_PIN
-from toddler_transducer.config import ENCODER_CLK_PIN, ENCODER_DT_PIN, ENCODER_VOLUME_NOTCH_PER_STEP, ENCODER_VOLUME_INCREASE_PER_STEP
+from toddler_transducer.config import (ENCODER_CLK_PIN, ENCODER_DT_PIN,
+                                       ENCODER_VOLUME_NOTCH_PER_STEP, ENCODER_VOLUME_INCREASE_PER_STEP)
 
 GPIO.setmode(GPIO.BOARD)
 
@@ -128,7 +129,8 @@ def gpio_update_loop(wifi_manager: DictProxy, vlc_playback_manager: DictProxy):
     """
     looping_switch = LEDSwitch(LOOPING_SENSE_PIN, LOOPING_INDICATOR_PIN)
     wifi_switch = LEDSwitch(WIFI_SENSE_PIN, WIFI_INDICATOR_PIN)
-    volume_encoder = RotaryEncoderVolume(ENCODER_CLK_PIN, ENCODER_DT_PIN, ENCODER_VOLUME_NOTCH_PER_STEP, ENCODER_VOLUME_INCREASE_PER_STEP)
+    volume_encoder = RotaryEncoderVolume(ENCODER_CLK_PIN, ENCODER_DT_PIN,
+                                         ENCODER_VOLUME_NOTCH_PER_STEP, ENCODER_VOLUME_INCREASE_PER_STEP)
 
     while True:
         # Update the wifi switch

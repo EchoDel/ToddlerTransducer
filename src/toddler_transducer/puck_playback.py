@@ -7,12 +7,14 @@ import time
 from multiprocessing.managers import ValueProxy, DictProxy
 
 
-def puck_playback_loop(rfid_tag_proxy: ValueProxy, vlc_playback_manager: DictProxy):
-    """
-    The main loop of the puck playback.
+def puck_playback_loop(rfid_tag_proxy: ValueProxy, vlc_playback_manager: DictProxy) -> None:
+    """Infinite loop that reads RFID tag and triggers VLC play/stop.
+
+    Uses a 2-cycle debounce before stopping playback on puck removal.
 
     Args:
-        rfid_tag_proxy (ValueProxy): The objects providing a .value items containing the current rfid tag id.
+        rfid_tag_proxy (ValueProxy): Proxy with a .value attribute holding the current RFID tag id.
+        vlc_playback_manager (DictProxy): Shared dict for VLC control and state.
     """
     current_tag_id = None
     puck_remove_count = 0
