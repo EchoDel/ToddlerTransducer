@@ -30,7 +30,7 @@ def puck_playback_loop(rfid_tag_proxy: ValueProxy, vlc_playback_manager: DictPro
                 if puck_remove_count >= 1:
                     if vlc_playback_manager['is_playing']:
                         vlc_playback_manager['do_stop'] = True
-                        current_tag_id = rfid_tag
+                    current_tag_id = rfid_tag
                 else:
                     puck_remove_count += 1
         elif rfid_tag != current_tag_id:
