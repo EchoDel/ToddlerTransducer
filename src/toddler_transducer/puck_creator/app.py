@@ -12,17 +12,17 @@ from . import generator
 
 _ai_mesh_cache: dict[str, str] = {}
 
-puck_designer_app = Flask(__name__)
-puck_designer_app.config["SECRET_KEY"] = "puck-designer-secret-change-in-production"
-puck_designer_app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024
+puck_creator_app = Flask(__name__)
+puck_creator_app.config["SECRET_KEY"] = "puck-creator-secret-change-in-production"
+puck_creator_app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024
 
 UPLOAD_DIR = Path(tempfile.mkdtemp(prefix="puck_uploads_"))
 OUTPUT_DIR = Path(tempfile.mkdtemp(prefix="puck_outputs_"))
 
 
-@puck_designer_app.route("/")
+@puck_creator_app.route("/")
 def index():
-    """Render the main puck designer page.
+    """Render the main puck creator page.
 
     Returns:
         Rendered HTML template.
@@ -30,7 +30,7 @@ def index():
     return render_template("designer.html")
 
 
-@puck_designer_app.route("/api/generate", methods=["POST"])
+@puck_creator_app.route("/api/generate", methods=["POST"])
 def api_generate():
     """Generate a puck mesh and return download URLs for the output files.
 
@@ -141,7 +141,7 @@ def api_generate():
         return jsonify({"error": str(e)}), 500
 
 
-@puck_designer_app.route("/api/generate_ai_mesh", methods=["POST"])
+@puck_creator_app.route("/api/generate_ai_mesh", methods=["POST"])
 def api_generate_ai_mesh():
     """Generate only the AI mesh (no merging or export) and cache it.
 
@@ -185,7 +185,7 @@ def api_generate_ai_mesh():
     })
 
 
-@puck_designer_app.route("/api/export_puck", methods=["POST"])
+@puck_creator_app.route("/api/export_puck", methods=["POST"])
 def api_export_puck():
     """Generate a puck with AI transforms applied and return the file.
 
@@ -260,7 +260,7 @@ def api_export_puck():
         return jsonify({"error": str(e)}), 500
 
 
-@puck_designer_app.route("/api/download/<job_id>/<filename>")
+@puck_creator_app.route("/api/download/<job_id>/<filename>")
 def api_download(job_id: str, filename: str):
     """Serve a generated file for download.
 
@@ -278,7 +278,7 @@ def api_download(job_id: str, filename: str):
     return send_file(str(file_path), as_attachment=True, download_name=filename)
 
 
-@puck_designer_app.route("/api/upload_stl", methods=["POST"])
+@puck_creator_app.route("/api/upload_stl", methods=["POST"])
 def api_upload_stl():
     """Upload a 3D mesh file (STL/3MF/OBJ) for use as a top feature.
 
@@ -312,7 +312,7 @@ def api_upload_stl():
     })
 
 
-@puck_designer_app.route("/api/upload_image", methods=["POST"])
+@puck_creator_app.route("/api/upload_image", methods=["POST"])
 def api_upload_image():
     """Upload an image file for AI model generation.
 
@@ -339,7 +339,7 @@ def api_upload_image():
     return jsonify({"upload_path": str(temp_path)})
 
 
-@puck_designer_app.route("/api/preview_mesh", methods=["POST"])
+@puck_creator_app.route("/api/preview_mesh", methods=["POST"])
 def api_preview_mesh():
     """Generate a preview mesh (non-AI types) and return vertices and faces.
 

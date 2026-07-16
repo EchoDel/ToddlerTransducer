@@ -790,7 +790,7 @@ def generate_and_export(
         ai_stl_path is None when top_type != 'ai_model'.
     """
     if output_dir is None:
-        output_dir = Path(tempfile.mkdtemp(prefix="puck_designer_"))
+        output_dir = Path(tempfile.mkdtemp(prefix="puck_creator_"))
 
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
