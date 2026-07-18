@@ -27,6 +27,7 @@ puck-creation = [
     "scipy",
     "manifold3d",
     "numpy>=1.24,<2.5",
+    "pytubefix",
 ]
 ai = ["hy3dgen"]
 

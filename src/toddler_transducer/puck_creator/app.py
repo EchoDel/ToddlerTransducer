@@ -339,6 +339,93 @@ def api_upload_image():
     return jsonify({"upload_path": str(temp_path)})
 
 
+@puck_creator_app.route("/api/youtube_info", methods=["POST"])
+def api_youtube_info():
+    """Fetch video metadata from a YouTube URL.
+
+    Expects JSON with ``url``.  Returns title, thumbnail URL, and
+    available audio stream bitrates.
+
+    Returns:
+        JSON with video info, or error with status.
+    """
+    data = request.get_json()
+    if not data or "url" not in data:
+        return jsonify({"error": "No URL provided"}), 400
+
+    try:
+        from pytubefix import YouTube
+        yt = YouTube(data["url"])
+        streams = [
+            {"itag": s.itag, "abr": s.abr, "mime_type": s.mime_type}
+            for s in yt.streams.filter(only_audio=True)
+        ]
+        thumbnail_path = None
+        if yt.thumbnail_url:
+            import urllib.request
+            thumb_dir = Path(tempfile.mkdtemp(prefix="yt_thumb_"))
+            thumb_path = thumb_dir / "thumbnail.jpg"
+            urllib.request.urlretrieve(yt.thumbnail_url, thumb_path)
+            thumbnail_path = f"/api/download/{thumb_dir.name}/thumbnail.jpg"
+        return jsonify({
+            "title": yt.title,
+            "thumbnail_url": yt.thumbnail_url,
+            "thumbnail_path": thumbnail_path,
+            "streams": streams,
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@puck_creator_app.route("/api/youtube_download", methods=["POST"])
+def api_youtube_download():
+    """Download audio from a YouTube URL and return the file.
+
+    Expects JSON with ``url`` and optionally ``itag`` (stream itag).
+    Downloads the audio and thumbnail to a temp directory, then
+    returns download URLs for both.
+
+    Returns:
+        JSON with ``audio_url`` and ``thumbnail_url``, or error.
+    """
+    data = request.get_json()
+    if not data or "url" not in data:
+        return jsonify({"error": "No URL provided"}), 400
+
+    try:
+        from pytubefix import YouTube
+        yt = YouTube(data["url"])
+
+        output_dir = Path(tempfile.mkdtemp(prefix="yt_download_"))
+
+        itag = data.get("itag")
+        if itag:
+            stream = yt.streams.get_by_itag(itag)
+        else:
+            stream = yt.streams.filter(only_audio=True).first()
+
+        if not stream:
+            return jsonify({"error": "No suitable audio stream found"}), 400
+
+        audio_path = stream.download(output_path=str(output_dir))
+        audio_file = Path(audio_path)
+
+        thumbnail_file = None
+        if yt.thumbnail_url:
+            import urllib.request
+            thumb_path = output_dir / "thumbnail.jpg"
+            urllib.request.urlretrieve(yt.thumbnail_url, thumb_path)
+            thumbnail_file = thumb_path
+
+        return jsonify({
+            "audio_url": f"/api/download/{output_dir.name}/{audio_file.name}",
+            "thumbnail_url": f"/api/download/{output_dir.name}/thumbnail.jpg" if thumbnail_file else None,
+            "title": yt.title,
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @puck_creator_app.route("/api/preview_mesh", methods=["POST"])
 def api_preview_mesh():
     """Generate a preview mesh (non-AI types) and return vertices and faces.
