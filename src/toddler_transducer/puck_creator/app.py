@@ -1,10 +1,11 @@
+import os
 import tempfile
 import uuid
 from pathlib import Path
 
 import trimesh
 from flask import (
-    Flask, render_template, request, jsonify, send_file, session
+    Flask, render_template, request, jsonify, send_file, session, send_from_directory
 )
 
 from ..config import AI_MODEL_BACKEND
@@ -28,6 +29,12 @@ def index():
         Rendered HTML template.
     """
     return render_template("designer.html")
+
+
+@puck_creator_app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(puck_creator_app.root_path, 'static'),
+        'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 
 @puck_creator_app.route("/api/generate", methods=["POST"])

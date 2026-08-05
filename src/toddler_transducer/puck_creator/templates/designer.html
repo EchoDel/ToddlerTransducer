@@ -27,6 +27,7 @@
             </div>
 
             <aside class="controls-panel">
+                <button id="toggle-controls" class="btn btn-primary" style="position: absolute; top: 10px; right: 10px; padding: 5px 10px; font-size: 0.8rem;">☰</button>
                 <h2>Parameters</h2>
 
                 <fieldset>
@@ -44,12 +45,12 @@
                     <div class="control-group">
                         <label for="hole_diameter">RFID Hole (mm)</label>
                         <input type="range" id="hole_diameter" min="5" max="45" value="30" step="1">
-                        <span id="hole_diameter_val">25</span>
+                        <span id="hole_diameter_val">30</span>
                     </div>
                     <div class="control-group">
                         <label for="hole_height">RFID Cavity Height (mm)</label>
                         <input type="range" id="hole_height" min="0" max="2" value="0.5" step="0.1">
-                        <span id="hole_height_val">2</span>
+                        <span id="hole_height_val">0.5</span>
                     </div>
                     <div class="control-group">
                         <label for="hole_bottom_offset">Cavity Offset from Bottom (mm)</label>
