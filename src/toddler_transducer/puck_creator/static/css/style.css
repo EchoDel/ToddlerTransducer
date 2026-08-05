@@ -294,3 +294,112 @@ footer {
     font-size: 0.75rem;
     color: var(--text-muted);
 }
+
+/* Tab bar */
+.tab-bar {
+    display: flex;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 16px;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    padding: 10px 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.tab-btn:hover {
+    color: var(--text);
+}
+
+.tab-btn.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+.tab-content {
+    display: none;
+    flex: 1;
+}
+
+.tab-content.active {
+    display: flex;
+}
+
+/* YouTube downloader tab */
+.yt-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 20px;
+    overflow-y: auto;
+    background: var(--bg);
+}
+
+.yt-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    width: 100%;
+    max-width: 520px;
+}
+
+.yt-card h2 {
+    font-size: 1.2rem;
+    color: var(--primary);
+    margin-bottom: 8px;
+}
+
+.yt-card .hint-text {
+    display: block;
+    margin-bottom: 20px;
+}
+
+.yt-card .control-group {
+    margin-bottom: 16px;
+}
+
+.yt-card .control-group label {
+    min-width: 100px;
+}
+
+#yt_url {
+    flex: 3;
+}
+
+.yt-thumbnail-area {
+    margin: 16px 0;
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--surface-2);
+}
+
+.yt-thumbnail-area img {
+    width: 100%;
+    display: block;
+}
+
+.yt-title {
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 16px;
+    color: var(--text);
+    line-height: 1.4;
+}
+
+#yt-info-area .btn-primary {
+    margin-bottom: 12px;
+}
+
+#btn-yt-fetch {
+    margin-bottom: 12px;
+}

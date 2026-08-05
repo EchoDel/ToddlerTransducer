@@ -778,3 +778,139 @@ function animate() {
     renderer.render(scene, camera);
 }
 animate();
+
+/* ── Tab switching ── */
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+        if (btn.dataset.tab === 'puck-designer') {
+            onResize();
+            updatePreview();
+        }
+    });
+});
+
+/* ── YouTube Downloader ── */
+
+let ytThumbnailPath = null;
+
+document.getElementById('btn-yt-fetch').addEventListener('click', async () => {
+    const url = document.getElementById('yt_url').value.trim();
+    if (!url) return;
+
+    const btn = document.getElementById('btn-yt-fetch');
+    const infoArea = document.getElementById('yt-info-area');
+    const errEl = document.getElementById('yt-error');
+    errEl.style.display = 'none';
+    btn.textContent = 'Fetching...';
+    btn.disabled = true;
+
+    try {
+        const resp = await fetch('/api/youtube_info', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url }),
+        });
+        const data = await resp.json();
+        if (data.error) {
+            errEl.textContent = data.error;
+            errEl.style.display = '';
+            return;
+        }
+
+        document.getElementById('yt-title').textContent = data.title;
+        document.getElementById('yt-thumbnail').src = data.thumbnail_path || data.thumbnail_url;
+        ytThumbnailPath = data.thumbnail_path;
+
+        const sel = document.getElementById('yt_stream');
+        sel.innerHTML = '';
+        if (data.streams.length === 0) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = 'No audio streams found';
+            sel.appendChild(opt);
+        } else {
+            for (const s of data.streams) {
+                const opt = document.createElement('option');
+                opt.value = s.itag;
+                opt.textContent = `${s.abr || 'unknown'} — ${s.mime_type || ''}`;
+                sel.appendChild(opt);
+            }
+        }
+
+        infoArea.style.display = '';
+        document.getElementById('yt-download-links').style.display = 'none';
+    } catch (err) {
+        errEl.textContent = 'Network error: ' + err.message;
+        errEl.style.display = '';
+    } finally {
+        btn.textContent = 'Fetch Video Info';
+        btn.disabled = false;
+    }
+});
+
+document.getElementById('btn-yt-download').addEventListener('click', async () => {
+    const url = document.getElementById('yt_url').value.trim();
+    if (!url) return;
+
+    const sel = document.getElementById('yt_stream');
+    const itag = sel.value;
+    if (!itag) {
+        alert('No audio stream selected.');
+        return;
+    }
+
+    const progressArea = document.getElementById('yt-progress-area');
+    const progressFill = document.getElementById('yt-progress-fill');
+    const progressLabel = document.getElementById('yt-progress-label');
+    const links = document.getElementById('yt-download-links');
+
+    const btn = document.getElementById('btn-yt-download');
+    btn.textContent = 'Downloading...';
+    btn.disabled = true;
+
+    progressArea.style.display = '';
+    progressFill.style.width = '0%';
+    progressLabel.textContent = 'Downloading...';
+
+    try {
+        const resp = await fetch('/api/youtube_download', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url, itag }),
+        });
+        const data = await resp.json();
+        if (data.error) {
+            progressLabel.textContent = 'Error: ' + data.error;
+            setTimeout(() => { progressArea.style.display = 'none'; }, 3000);
+            return;
+        }
+
+        progressFill.style.width = '100%';
+        progressLabel.textContent = 'Complete!';
+        setTimeout(() => { progressArea.style.display = 'none'; }, 2000);
+
+        const audioLink = document.getElementById('yt-download-audio');
+        audioLink.href = data.audio_url;
+        audioLink.download = data.title + '.mp4';
+        links.style.display = '';
+
+        const thumbLink = document.getElementById('yt-download-thumbnail');
+        if (data.thumbnail_url) {
+            thumbLink.href = data.thumbnail_url;
+            thumbLink.style.display = '';
+        } else {
+            thumbLink.style.display = 'none';
+        }
+    } catch (err) {
+        progressLabel.textContent = 'Error: ' + err.message;
+        setTimeout(() => { progressArea.style.display = 'none'; }, 3000);
+    } finally {
+        btn.textContent = 'Download';
+        btn.disabled = false;
+    }
+});

@@ -12,17 +12,17 @@ from . import generator
 
 _ai_mesh_cache: dict[str, str] = {}
 
-puck_designer_app = Flask(__name__)
-puck_designer_app.config["SECRET_KEY"] = "puck-designer-secret-change-in-production"
-puck_designer_app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024
+puck_creator_app = Flask(__name__)
+puck_creator_app.config["SECRET_KEY"] = "puck-creator-secret-change-in-production"
+puck_creator_app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024
 
 UPLOAD_DIR = Path(tempfile.mkdtemp(prefix="puck_uploads_"))
 OUTPUT_DIR = Path(tempfile.mkdtemp(prefix="puck_outputs_"))
 
 
-@puck_designer_app.route("/")
+@puck_creator_app.route("/")
 def index():
-    """Render the main puck designer page.
+    """Render the main puck creator page.
 
     Returns:
         Rendered HTML template.
@@ -30,7 +30,7 @@ def index():
     return render_template("designer.html")
 
 
-@puck_designer_app.route("/api/generate", methods=["POST"])
+@puck_creator_app.route("/api/generate", methods=["POST"])
 def api_generate():
     """Generate a puck mesh and return download URLs for the output files.
 
@@ -141,7 +141,7 @@ def api_generate():
         return jsonify({"error": str(e)}), 500
 
 
-@puck_designer_app.route("/api/generate_ai_mesh", methods=["POST"])
+@puck_creator_app.route("/api/generate_ai_mesh", methods=["POST"])
 def api_generate_ai_mesh():
     """Generate only the AI mesh (no merging or export) and cache it.
 
@@ -185,7 +185,7 @@ def api_generate_ai_mesh():
     })
 
 
-@puck_designer_app.route("/api/export_puck", methods=["POST"])
+@puck_creator_app.route("/api/export_puck", methods=["POST"])
 def api_export_puck():
     """Generate a puck with AI transforms applied and return the file.
 
@@ -260,7 +260,7 @@ def api_export_puck():
         return jsonify({"error": str(e)}), 500
 
 
-@puck_designer_app.route("/api/download/<job_id>/<filename>")
+@puck_creator_app.route("/api/download/<job_id>/<filename>")
 def api_download(job_id: str, filename: str):
     """Serve a generated file for download.
 
@@ -278,7 +278,7 @@ def api_download(job_id: str, filename: str):
     return send_file(str(file_path), as_attachment=True, download_name=filename)
 
 
-@puck_designer_app.route("/api/upload_stl", methods=["POST"])
+@puck_creator_app.route("/api/upload_stl", methods=["POST"])
 def api_upload_stl():
     """Upload a 3D mesh file (STL/3MF/OBJ) for use as a top feature.
 
@@ -312,7 +312,7 @@ def api_upload_stl():
     })
 
 
-@puck_designer_app.route("/api/upload_image", methods=["POST"])
+@puck_creator_app.route("/api/upload_image", methods=["POST"])
 def api_upload_image():
     """Upload an image file for AI model generation.
 
@@ -339,7 +339,94 @@ def api_upload_image():
     return jsonify({"upload_path": str(temp_path)})
 
 
-@puck_designer_app.route("/api/preview_mesh", methods=["POST"])
+@puck_creator_app.route("/api/youtube_info", methods=["POST"])
+def api_youtube_info():
+    """Fetch video metadata from a YouTube URL.
+
+    Expects JSON with ``url``.  Returns title, thumbnail URL, and
+    available audio stream bitrates.
+
+    Returns:
+        JSON with video info, or error with status.
+    """
+    data = request.get_json()
+    if not data or "url" not in data:
+        return jsonify({"error": "No URL provided"}), 400
+
+    try:
+        from pytubefix import YouTube
+        yt = YouTube(data["url"])
+        streams = [
+            {"itag": s.itag, "abr": s.abr, "mime_type": s.mime_type}
+            for s in yt.streams.filter(only_audio=True)
+        ]
+        thumbnail_path = None
+        if yt.thumbnail_url:
+            import urllib.request
+            thumb_dir = Path(tempfile.mkdtemp(prefix="yt_thumb_"))
+            thumb_path = thumb_dir / "thumbnail.jpg"
+            urllib.request.urlretrieve(yt.thumbnail_url, thumb_path)
+            thumbnail_path = f"/api/download/{thumb_dir.name}/thumbnail.jpg"
+        return jsonify({
+            "title": yt.title,
+            "thumbnail_url": yt.thumbnail_url,
+            "thumbnail_path": thumbnail_path,
+            "streams": streams,
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@puck_creator_app.route("/api/youtube_download", methods=["POST"])
+def api_youtube_download():
+    """Download audio from a YouTube URL and return the file.
+
+    Expects JSON with ``url`` and optionally ``itag`` (stream itag).
+    Downloads the audio and thumbnail to a temp directory, then
+    returns download URLs for both.
+
+    Returns:
+        JSON with ``audio_url`` and ``thumbnail_url``, or error.
+    """
+    data = request.get_json()
+    if not data or "url" not in data:
+        return jsonify({"error": "No URL provided"}), 400
+
+    try:
+        from pytubefix import YouTube
+        yt = YouTube(data["url"])
+
+        output_dir = Path(tempfile.mkdtemp(prefix="yt_download_"))
+
+        itag = data.get("itag")
+        if itag:
+            stream = yt.streams.get_by_itag(itag)
+        else:
+            stream = yt.streams.filter(only_audio=True).first()
+
+        if not stream:
+            return jsonify({"error": "No suitable audio stream found"}), 400
+
+        audio_path = stream.download(output_path=str(output_dir))
+        audio_file = Path(audio_path)
+
+        thumbnail_file = None
+        if yt.thumbnail_url:
+            import urllib.request
+            thumb_path = output_dir / "thumbnail.jpg"
+            urllib.request.urlretrieve(yt.thumbnail_url, thumb_path)
+            thumbnail_file = thumb_path
+
+        return jsonify({
+            "audio_url": f"/api/download/{output_dir.name}/{audio_file.name}",
+            "thumbnail_url": f"/api/download/{output_dir.name}/thumbnail.jpg" if thumbnail_file else None,
+            "title": yt.title,
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@puck_creator_app.route("/api/preview_mesh", methods=["POST"])
 def api_preview_mesh():
     """Generate a preview mesh (non-AI types) and return vertices and faces.
 

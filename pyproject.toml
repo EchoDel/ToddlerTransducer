@@ -27,6 +27,7 @@ puck-creation = [
     "scipy",
     "manifold3d",
     "numpy>=1.24,<2.5",
+    "pytubefix",
 ]
 ai = ["hy3dgen"]
 
@@ -72,4 +73,4 @@ build-backend = "poetry.core.masonry.api"
 launch_toddler_transducer_web_app = "toddler_transducer.web_ui.launch:launch_toddler_transducer_web_app"
 launch_dev_toddler_transducer_web_app = "toddler_transducer.web_ui.launch:launch_dev_toddler_transducer_web_app"
 launch_toddler_transducer = "toddler_transducer.__main__:main"
-launch_puck_designer = "toddler_transducer.puck_designer.launch:main"
+launch_puck_creator = "toddler_transducer.puck_creator.launch:main"
