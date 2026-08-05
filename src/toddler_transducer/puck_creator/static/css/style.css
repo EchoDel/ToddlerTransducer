@@ -117,6 +117,18 @@ header h1 {
     }
     
     .controls-panel.visible {
+        position: fixed;
+        top: 60px;
+        right: 10px;
+        bottom: 10px;
+        width: min(85vw, 420px);
+        max-width: 85vw;
+        max-height: none;
+        z-index: 999;
+        border-top: none;
+        border-left: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
         display: block;
     }
 }
@@ -136,18 +148,6 @@ header h1 {
     color: white;
     cursor: pointer;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2); /* Add shadow for better visibility */
-}
-
-@media screen and (max-width: 768px) {
-    #toggle-controls {
-        display: block; /* Show on mobile */
-    }
-}
-
-@media screen and (max-width: 768px) {
-    #toggle-controls {
-        display: block; /* Show on mobile */
-    }
 }
 
 @media screen and (max-width: 768px) {
