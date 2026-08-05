@@ -914,3 +914,64 @@ document.getElementById('btn-yt-download').addEventListener('click', async () =>
         btn.disabled = false;
     }
 });
+
+// Mobile controls toggle setup
+function setupMobileControls() {
+    const toggleBtn = document.getElementById('toggle-controls');
+    const controlsPanel = document.querySelector('.controls-panel');
+    
+    if (window.innerWidth <= 768) {
+        // Mobile view - hide controls panel by default
+        if (controlsPanel) {
+            controlsPanel.classList.remove('visible');
+        }
+        if (toggleBtn) {
+            toggleBtn.style.display = 'block';
+        }
+    } else {
+        // Desktop view - show controls panel
+        if (controlsPanel) {
+            controlsPanel.classList.add('visible');
+        }
+        if (toggleBtn) {
+            toggleBtn.style.display = 'none';
+        }
+    }
+}
+
+// Initialize the mobile controls toggle on load
+document.addEventListener('DOMContentLoaded', function() {
+    setupMobileControls();
+    
+    // Add listener for window resize to handle orientation changes
+    window.addEventListener('resize', function() {
+        setupMobileControls();
+    });
+    
+    // Add click handler for mobile controls toggle button
+    const toggleBtn = document.getElementById('toggle-controls');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const controlsPanel = document.querySelector('.controls-panel');
+            if (controlsPanel) {
+                controlsPanel.classList.toggle('visible');
+            }
+        });
+    }
+});
+
+// Handle tab switching - make sure we initialize properly after tab changes
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+        
+        // On tab change, re-initialize mobile controls if needed
+        if (btn.dataset.tab === 'puck-designer') {
+            setupMobileControls();
+        }
+    });
+});

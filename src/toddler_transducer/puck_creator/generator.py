@@ -286,6 +286,50 @@ def _filleted_cylinder_profile(
     return np.array(profile)
 
 
+def _subtract_cavity(
+    mesh: trimesh.Trimesh,
+    outer_radius: float,
+    thickness: float,
+    hole_diameter: float,
+    hole_height: float,
+    hole_bottom_offset: float,
+    segments: int = 64,
+) -> trimesh.Trimesh:
+    """Subtract a bottom cylindrical cavity from a mesh.
+
+    The cavity is centered on the mesh's X/Y axis and sits at the bottom of
+    the puck (offset from the base bottom by *hole_bottom_offset*).
+
+    Args:
+        mesh: Mesh to remove the cavity from.
+        outer_radius: Outer radius of the puck in mm.
+        thickness: Overall thickness of the puck in mm.
+        hole_diameter: Diameter of the bottom cavity in mm.
+        hole_height: Height of the cavity in mm.
+        hole_bottom_offset: Offset of the cavity bottom from the base bottom.
+        segments: Circumferential subdivision count (default 64).
+
+    Returns:
+        The mesh with the cavity removed.
+    """
+    hole_radius = min(hole_diameter / 2, outer_radius - 0.5)
+    cavity_height = max(0, hole_height)
+    cavity_bottom = max(0, hole_bottom_offset)
+    cavity_top = cavity_bottom + cavity_height
+    if cavity_top > thickness:
+        cavity_height = max(0, thickness - cavity_bottom)
+        cavity_top = thickness
+
+    if cavity_height > 0.1 and hole_radius > 0:
+        bottom_z = -thickness / 2 + cavity_bottom
+        cavity_center_z = bottom_z + cavity_height / 2
+        cavity = trimesh.creation.cylinder(radius=hole_radius, height=cavity_height, sections=segments)
+        cavity.apply_translation([0, 0, cavity_center_z])
+        mesh = mesh.difference(cavity)
+
+    return mesh
+
+
 def create_base(
     diameter: float = DEFAULT_BASE_DIAMETER,
     thickness: float = DEFAULT_BASE_THICKNESS,
@@ -294,6 +338,7 @@ def create_base(
     hole_bottom_offset: float = DEFAULT_HOLE_BOTTOM_OFFSET,
     segments: int = 64,
     fillet_radius: float = 2.0,
+    apply_cavity: bool = True,
 ) -> trimesh.Trimesh:
     """Create the puck base — a filleted cylinder with an optional central cavity.
 
@@ -308,6 +353,9 @@ def create_base(
         hole_bottom_offset: Offset of the cavity bottom from the base bottom (default 0.5).
         segments: Circumferential subdivision count (default 64).
         fillet_radius: Radius of the edge fillet in mm (default 2).
+        apply_cavity: Whether to subtract the cavity immediately (default True).
+                      Set to False to defer the cavity removal until after
+                      additional geometry has been merged.
 
     Returns:
         A watertight Trimesh of the puck base, centered at origin.
@@ -317,20 +365,9 @@ def create_base(
     profile = _filleted_cylinder_profile(outer_radius, thickness, fillet_radius, arc_segments=6)
     base = trimesh.creation.revolve(profile, sections=segments)
 
-    hole_radius = min(hole_diameter / 2, outer_radius - 0.5)
-    cavity_height = max(0, hole_height)
-    cavity_bottom = max(0, hole_bottom_offset)
-    cavity_top = cavity_bottom + cavity_height
-    if cavity_top > thickness:
-        cavity_height = max(0, thickness - cavity_bottom)
-        cavity_top = thickness
-
-    if cavity_height > 0.1 and hole_radius > 0:
-        bottom_z = -thickness / 2 + cavity_bottom
-        cavity_center_z = bottom_z + cavity_height / 2
-        cavity = trimesh.creation.cylinder(radius=hole_radius, height=cavity_height, sections=segments)
-        cavity.apply_translation([0, 0, cavity_center_z])
-        base = base.difference(cavity)
+    if apply_cavity:
+        base = _subtract_cavity(base, outer_radius, thickness, hole_diameter, hole_height,
+                                hole_bottom_offset, segments)
 
     center = (base.bounds[0] + base.bounds[1]) / 2
     base.vertices -= center
@@ -656,40 +693,64 @@ def generate_puck(
         top_params = {}
 
     ai_mesh_path: Optional[str] = None
+
+    def _apply_top_feature(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
+        """Merge the top feature (text/shape/upload/ai_model) onto the base.
+
+        The AI mesh path is memoized in ``ai_mesh_path`` so a retry after a
+        failed boolean does not regenerate the model.
+        """
+        nonlocal ai_mesh_path
+        if top_type == "text" and text_content:
+            mesh = add_text(mesh, text_content, font_size=font_size, text_height=text_height)
+        elif top_type == "shape":
+            mesh = add_shape(mesh, top_params.get("shape_type", "cube"), top_params)
+        elif top_type == "upload" and uploaded_stl_path:
+            mesh = merge_stl(mesh, uploaded_stl_path,
+                             offset_x=uploaded_offset_x,
+                             offset_y=-uploaded_offset_y,
+                             offset_z=uploaded_offset_z,
+                             rotation_x=uploaded_rotation_x,
+                             rotation_y=uploaded_rotation_y,
+                             rotation_z=uploaded_rotation_z,
+                             flip_x=uploaded_flip_x,
+                             flip_y=uploaded_flip_z,
+                             flip_z=uploaded_flip_y,
+                             scale=uploaded_scale)
+        elif top_type == "ai_model" and (ai_image_path or ai_pregen_mesh_path):
+            if ai_pregen_mesh_path:
+                ai_mesh_path = ai_pregen_mesh_path
+            elif ai_mesh_path is None:
+                if AI_MODEL_BACKEND == "hunyuan3d":
+                    from .inference_hunyuan3d import generate_mesh_from_image
+                else:
+                    from .inference_instant_mesh import generate_mesh_from_image
+                ai_mesh_path = generate_mesh_from_image(ai_image_path, diffusion_steps=64)
+            mesh = merge_stl(mesh, str(ai_mesh_path), offset_x=ai_offset_x, offset_y=-ai_offset_y,
+                             offset_z=ai_offset_z, rotation_x=ai_rotation_x, rotation_y=ai_rotation_y,
+                             rotation_z=ai_rotation_z, flip_x=ai_flip_x,
+                             flip_y=ai_flip_z, flip_z=ai_flip_y, scale=ai_scale)
+        return mesh
+
     mesh = create_base(diameter=base_diameter, thickness=base_thickness, hole_diameter=hole_diameter,
                        hole_height=hole_height,
                        hole_bottom_offset=hole_bottom_offset,
-                       fillet_radius=base_fillet)
+                       fillet_radius=base_fillet,
+                       apply_cavity=False)
+    mesh = _apply_top_feature(mesh)
 
-    if top_type == "text" and text_content:
-        mesh = add_text(mesh, text_content, font_size=font_size, text_height=text_height)
-    elif top_type == "shape":
-        mesh = add_shape(mesh, top_params.get("shape_type", "cube"), top_params)
-    elif top_type == "upload" and uploaded_stl_path:
-        mesh = merge_stl(mesh, uploaded_stl_path,
-                         offset_x=uploaded_offset_x,
-                         offset_y=-uploaded_offset_y,
-                         offset_z=uploaded_offset_z,
-                         rotation_x=uploaded_rotation_x,
-                         rotation_y=uploaded_rotation_y,
-                         rotation_z=uploaded_rotation_z,
-                         flip_x=uploaded_flip_x,
-                         flip_y=uploaded_flip_z,
-                         flip_z=uploaded_flip_y,
-                         scale=uploaded_scale)
-    elif top_type == "ai_model" and (ai_image_path or ai_pregen_mesh_path):
-        if ai_pregen_mesh_path:
-            ai_mesh_path = ai_pregen_mesh_path
-        else:
-            if AI_MODEL_BACKEND == "hunyuan3d":
-                from .inference_hunyuan3d import generate_mesh_from_image
-            else:
-                from .inference_instant_mesh import generate_mesh_from_image
-            ai_mesh_path = generate_mesh_from_image(ai_image_path, diffusion_steps=64)
-        mesh = merge_stl(mesh, str(ai_mesh_path), offset_x=ai_offset_x, offset_y=-ai_offset_y,
-                         offset_z=ai_offset_z, rotation_x=ai_rotation_x, rotation_y=ai_rotation_y,
-                         rotation_z=ai_rotation_z, flip_x=ai_flip_x,
-                         flip_y=ai_flip_z, flip_z=ai_flip_y, scale=ai_scale)
+    try:
+        mesh = _subtract_cavity(mesh, base_diameter / 2, base_thickness, hole_diameter, hole_height,
+                                hole_bottom_offset)
+    except Exception:
+        # Merging did not yield a clean volume (e.g. a non-watertight upload
+        # fell back to concatenation), so boolean subtraction is impossible.
+        # Carve the cavity into the base before merging instead.
+        mesh = _apply_top_feature(create_base(diameter=base_diameter, thickness=base_thickness,
+                                              hole_diameter=hole_diameter, hole_height=hole_height,
+                                              hole_bottom_offset=hole_bottom_offset,
+                                              fillet_radius=base_fillet,
+                                              apply_cavity=True))
 
     return mesh, ai_mesh_path
 

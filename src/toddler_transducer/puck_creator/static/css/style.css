@@ -95,6 +95,67 @@ header h1 {
     overflow-y: auto;
 }
 
+/* Mobile responsiveness */
+@media screen and (max-width: 768px) {
+    .layout {
+        flex-direction: column;
+        height: calc(100vh - 130px);
+    }
+    
+    .viewport-container {
+        min-height: 50%;
+    }
+    
+    .controls-panel {
+        width: 100%;
+        min-width: auto;
+        border-left: none;
+        border-top: 1px solid var(--border);
+        max-height: 50%;
+        overflow-y: auto;
+        display: none;
+    }
+    
+    .controls-panel.visible {
+        position: fixed;
+        top: 60px;
+        right: 10px;
+        bottom: 10px;
+        width: min(85vw, 420px);
+        max-width: 85vw;
+        max-height: none;
+        z-index: 999;
+        border-top: none;
+        border-left: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        display: block;
+    }
+}
+
+/* Mobile controls panel toggle */
+#toggle-controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 5px 10px;
+    font-size: 0.8rem;
+    z-index: 100; /* Make sure it's above other elements */
+    display: none; /* Hidden by default, shown on mobile only */
+    background: #007bff; /* Blue background for visibility */
+    border: none;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2); /* Add shadow for better visibility */
+}
+
+@media screen and (max-width: 768px) {
+    #toggle-controls {
+        display: block; /* Show on mobile */
+    }
+}
+
 .controls-panel h2 {
     font-size: 1.1rem;
     margin-bottom: 16px;
