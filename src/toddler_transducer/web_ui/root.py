@@ -16,6 +16,7 @@ from werkzeug.utils import secure_filename
 from toddler_transducer.audio_file_manager import get_current_files, backup_audio_files, get_sorted_backup_item
 from toddler_transducer.audio import seconds_to_mmss, save_volume, save_puck_lockout
 from toddler_transducer.config import AUDIO_FILE_BASE_PATH
+from toddler_transducer.device_config import is_slave
 from toddler_transducer.metadata import append_to_metadata, load_metadata, remove_from_metadata_by_track_name
 
 
@@ -76,7 +77,8 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy,
                                      play_current_time=track_time_str,
                                      loop_icon_class=loop_icon_class,
                                      volume=vlc_playback_manager.get('volume', 50),
-                                     current_puck_id=current_puck_id)
+                                     current_puck_id=current_puck_id,
+                                     is_slave=is_slave())
         return html_files
 
     @flask_app.route('/play_track', methods=['POST'])
@@ -97,6 +99,8 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy,
     @flask_app.route('/upload_track', methods=['POST'])
     def upload_track():
         """Upload an audio file and create a metadata entry."""
+        if is_slave():
+            return 'Forbidden: uploads are disabled on a slave device', 403
         if ('TrackFile' in request.files) and ('current_puck_id' in session):
             file = request.files['TrackFile']
             filename = secure_filename(file.filename)
@@ -215,6 +219,8 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy,
     @flask_app.route('/api/delete_track', methods=['POST'])
     def api_delete_track():
         """Delete a track by name via JSON API."""
+        if is_slave():
+            return {'ok': False, 'error': 'deletes are disabled on a slave device'}, 403
         data = request.get_json()
         if data and 'track_name' in data:
             removed = remove_from_metadata_by_track_name(data['track_name'])

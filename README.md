@@ -53,6 +53,29 @@ VLC Python docs, https://www.olivieraubert.net/vlc/python-ctypes/doc/
 Loop VLC, https://stackoverflow.com/questions/7214843/repeating-single-movie-using-python-bindings-for-vlc-what-is-a-psz-name
 
 
+# How do multiple devices work
+
+Each device has a role set in the *Devices* section of the web app:
+
+* **Master** - the song library. Songs can be uploaded and deleted here. It advertises itself on the
+  local network using mDNS (zeroconf) and shows a pairing code.
+* **Slave** - a read-only mirror. The upload and delete controls are hidden and disabled. It discovers
+  masters on the network, and after pairing polls the master every 30 seconds, downloading new or changed
+  songs and the puck-to-song mapping automatically.
+
+Pairing:
+
+1. Give each device a unique hostname (e.g. `sudo raspi-config`). All devices must have different
+   hostnames or `.local` name resolution will collide.
+2. On the master, open the web app -> **Devices** and set the role to *Master*.
+3. On the slave, open the web app -> **Devices**, set the role to *Slave*, press **Scan for devices**,
+   select the master, and enter the pairing code shown on the master's Devices page. Press **Bind**.
+4. The slave immediately syncs and keeps syncing in the background. No fixed IP addresses are required;
+   devices are found by name over mDNS.
+
+To remove a device, use the Unpair button on the master or the Unbind button on the slave.
+
+
 # Todo
 
 - [x] Wiring Diagram

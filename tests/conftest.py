@@ -62,16 +62,21 @@ def tmp_audio_root(tmp_path: Path) -> Path:
 @pytest.fixture(autouse=True)
 def patch_config(tmp_audio_root: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """Point config paths at temp locations so no real filesystem is touched."""
+    device_config_path = tmp_path / 'device_config.json'
     monkeypatch.setattr('toddler_transducer.config.AUDIO_FILE_BASE_PATH', tmp_audio_root)
     monkeypatch.setattr('toddler_transducer.config.METADATA_FILE_PATH', tmp_audio_root / 'metadata')
     monkeypatch.setattr('toddler_transducer.config.BACKUP_FILE_BASE_PATH', tmp_path / 'backups')
     monkeypatch.setattr('toddler_transducer.config.VOLUME_FILE_PATH', tmp_path / 'persistent_settings.json')
+    monkeypatch.setattr('toddler_transducer.config.DEVICE_CONFIG_FILE_PATH', device_config_path)
     monkeypatch.setattr('toddler_transducer.metadata.METADATA_FILE_PATH', tmp_audio_root / 'metadata')
     monkeypatch.setattr('toddler_transducer.audio.AUDIO_FILE_BASE_PATH', tmp_audio_root)
     monkeypatch.setattr('toddler_transducer.audio.VOLUME_FILE_PATH', tmp_path / 'persistent_settings.json')
     monkeypatch.setattr('toddler_transducer.audio_file_manager.AUDIO_FILE_BASE_PATH', tmp_audio_root)
     monkeypatch.setattr('toddler_transducer.audio_file_manager.BACKUP_FILE_BASE_PATH', tmp_path / 'backups')
     monkeypatch.setattr('toddler_transducer.web_ui.root.AUDIO_FILE_BASE_PATH', tmp_audio_root)
+    monkeypatch.setattr('toddler_transducer.web_ui.devices.AUDIO_FILE_BASE_PATH', tmp_audio_root)
+    monkeypatch.setattr('toddler_transducer.device_config.DEVICE_CONFIG_FILE_PATH', device_config_path)
+    monkeypatch.setattr('toddler_transducer.device_sync.sync.AUDIO_FILE_BASE_PATH', tmp_audio_root)
     (tmp_path / 'backups').mkdir(parents=True, exist_ok=True)
     yield
 
@@ -149,8 +154,10 @@ def flask_app(rfid_tag_proxy, vlc_manager):
     app.config['TESTING'] = True
     app.config['SECRET_KEY'] = 'test-secret'
     from toddler_transducer.web_ui.root import add_root_routes
+    from toddler_transducer.web_ui.devices import add_device_routes
     with app.app_context():
         add_root_routes(app, rfid_tag_proxy, vlc_manager)
+        add_device_routes(app)
     yield app
 
 

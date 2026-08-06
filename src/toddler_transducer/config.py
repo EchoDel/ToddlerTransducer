@@ -12,6 +12,10 @@ BACKUP_FILE_BASE_PATH.mkdir(parents=True, exist_ok=True)
 
 VOLUME_FILE_PATH = Path('./persistent_settings.json')
 
+DEVICE_CONFIG_FILE_PATH = Path('./device_config.json')
+
+WEB_UI_PORT = 8080
+
 # AI model backend selection — "hunyuan3d" or "instantmesh"
 AI_MODEL_BACKEND = "hunyuan3d"
 

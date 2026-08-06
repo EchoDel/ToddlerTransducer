@@ -18,17 +18,12 @@ class TrackMetadata(TypedDict):
     track_name: str
 
 
-class Metadata(TypedDict):
-    """The metadata dict for all the audio files."""
-    metadata: TrackMetadata
-
-
-def load_metadata() -> Metadata:
+def load_metadata() -> dict[str, TrackMetadata]:
     """
     Loads the metadata of the audio files.
 
     Returns:
-        (Metadata): The metadata of the audio files.
+        (dict[str, TrackMetadata]): The metadata of the audio files.
     """
     if METADATA_FILE_PATH.exists():
         with open(METADATA_FILE_PATH, encoding='UTF-8') as f:
@@ -37,19 +32,19 @@ def load_metadata() -> Metadata:
     return {}
 
 
-def save_metadata(metadata):
+def save_metadata(metadata: dict[str, TrackMetadata]):
     """
     Saves the metadata of the audio files backing up the prior version first.
 
     Args:
-        metadata (Metadata): The metadata of the audio files to be saved.
+        metadata (dict[str, TrackMetadata]): The metadata of the audio files to be saved.
     """
     metadata_backup_name = f'{METADATA_FILE_PATH.name}_{time.strftime("%Y%m%d-%H%M%S")}'
     copy2(METADATA_FILE_PATH, METADATA_FILE_PATH.with_name(metadata_backup_name))
     METADATA_FILE_PATH.write_text(json.dumps(metadata), encoding='UTF-8')
 
 
-def remove_from_metadata(uuid: str) -> dict | None:
+def remove_from_metadata(uuid: str) -> TrackMetadata | None:
     """
     Removes a track from the metadata store by UUID.
 
@@ -57,7 +52,7 @@ def remove_from_metadata(uuid: str) -> dict | None:
         uuid (str): The uuid of the audio file to remove.
 
     Returns:
-        dict | None: The removed metadata entry, or None if not found.
+        TrackMetadata | None: The removed metadata entry, or None if not found.
     """
     metadata = load_metadata()
     entry = metadata.pop(uuid, None)

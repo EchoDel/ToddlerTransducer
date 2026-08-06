@@ -13,6 +13,7 @@ dependencies = [
     "mfrc522;  platform_machine == 'aarch64'",
     "RPi.GPIO;  platform_machine == 'aarch64'",
     "spidev;  platform_machine == 'aarch64'",
+    "zeroconf (>=0.132)",
 ]
 
 [project.optional-dependencies]
@@ -58,6 +59,7 @@ omit = ["src/toddler_transducer/proxies/*"]
 
 [tool.coverage.html]
 directory = "coverage_html_report"
+
 
 
 

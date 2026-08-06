@@ -103,7 +103,9 @@
                             {% for track in playable_tracks %}
                             <div class="list-group-item list-group-item-action py-1 d-flex align-items-center" style="cursor:default">
                                 <button type="button" class="flex-grow-1 text-start bg-transparent border-0 py-1" data-track="{{track}}">{{track}}</button>
+                                {% if not is_slave %}
                                 <button type="button" class="btn btn-sm btn-outline-danger border-0 py-0 px-1 delete-track-btn" data-track="{{track}}" title="Delete">✕</button>
+                                {% endif %}
                             </div>
                             {% endfor %}
                         </div>
@@ -113,6 +115,7 @@
 
             <!-- Upload / Admin (right half) -->
             <div class="col-6" style="text-align: center;">
+                {% if not is_slave %}
                 <h2>Upload New Track</h2>
                 <form action="/upload_track" method="post">
                     <input type="submit" name="UpdatePuckID" value="Update Puck ID"><br>
@@ -127,6 +130,8 @@
 
                     <input type="submit" name="UploadFile" value="Upload">
                 </form>
+                <hr>
+                {% endif %}
                 <h2>Download Backup</h2>
                 <form action="/backup_audio" method="get">
                     <input type="submit" name="DownloadBackup" value="Download Backup"><br>
@@ -140,6 +145,11 @@
                 <button type="button" class="btn btn-danger" id="restartBtn">Restart Service</button>
             </div>
         </div>
+        <hr>
+        <h2>Devices</h2>
+        <div id="devicesSection">
+            <p>Loading...</p>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -147,5 +157,6 @@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="{{ url_for('static', filename='player.js') }}"></script>
+    <script src="{{ url_for('static', filename='devices.js') }}"></script>
 </body>
 </html>
