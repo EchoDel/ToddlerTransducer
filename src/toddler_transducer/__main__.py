@@ -10,27 +10,24 @@ from multiprocessing import Process, Manager
 
 import toddler_transducer.proxies.fake_rpi_setup
 from toddler_transducer.rfid import threaded_get_rfid_id
-from toddler_transducer.audio import VLCControlDict, launch_vlc_threaded
+from toddler_transducer.audio import VLCControlDict, launch_vlc_threaded, load_saved_volume, load_saved_puck_lockout
 from toddler_transducer.gpio import gpio_update_loop
 from toddler_transducer.puck_playback import puck_playback_loop
 from toddler_transducer.web_ui.launch import launch_toddler_transducer_web_app
 
 
-def main():
-    """
-    The main function for the program.
-    This controls both the puck playback and the webapp playback through multiprocessing.
-    """
+def main() -> None:
+    """Entry point: set up subprocesses for RFID, GPIO, VLC, puck playback, and web UI."""
 
-    def term_handler(signum, frame):
+    def term_handler(signum: int, frame) -> None:
         """
         Handles the sigterm event so that the gpio can be cleaned up if its being used.
         Based on this blog;
          * https://chadrick-kwag.net/posts/python-interrupt-sigterm-sigkill-exception-handling-experiments/
 
         Args:
-            signum:
-            frame:
+            signum: Signal number.
+            frame: Current stack frame.
         """
         print("sig term handler")
         # https://stackoverflow.com/questions/56098431/runtimewarning-this-channel-is-already-in-use
@@ -53,7 +50,8 @@ def main():
         'do_pause': False,
         'toggle_looping': False,
         'seek_position': -1.0,
-        'volume': 50,
+        'volume': load_saved_volume(),
+        'puck_lockout': load_saved_puck_lockout(),
 
         # State outputs
         'playback_source': None,

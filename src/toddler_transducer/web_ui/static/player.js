@@ -2,6 +2,7 @@
   let isPlaying = false;
   let isLooping = false;
   let isDragging = false;
+  let puckLockout = false;
   let trackList = [];
   let currentTrackName = '';
 
@@ -20,6 +21,7 @@
     prevBtn: $('#prevBtn'),
     nextBtn: $('#nextBtn'),
     loopBtn: $('#loopBtn'),
+    puckLockoutBtn: $('#puckLockoutBtn'),
     volumeSlider: $('#volumeSlider'),
     trackListGroup: $('#trackListGroup'),
     trackFilter: $('#trackFilter'),
@@ -45,9 +47,14 @@
     els.loopBtn.classList.toggle('loop-active', isLooping);
   }
 
+  function updatePuckLockoutButton() {
+    els.puckLockoutBtn.classList.toggle('puck-locked', puckLockout);
+    els.puckLockoutBtn.title = puckLockout ? 'Puck Locked (tap to unlock)' : 'Puck Active (tap to lock)';
+  }
+
   function highlightActiveTrack(name) {
-    $$('.list-group-item').forEach((el) => {
-      el.classList.toggle('active-track', el.dataset.track === name);
+    $$('[data-track]').forEach((el) => {
+      el.parentElement.classList.toggle('active-track', el.dataset.track === name);
     });
   }
 
@@ -68,6 +75,16 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
+  }
+
+  // ── Puck Lockout ──────────────────────────────────────
+
+  async function togglePuckLockout() {
+    const state = await fetchJSON('/api/puck_lockout');
+    const newState = !(state && state.puck_lockout);
+    await postJSON('/api/puck_lockout', { puck_lockout: newState });
+    puckLockout = newState;
+    updatePuckLockoutButton();
   }
 
   // ── Play a specific track ─────────────────────────────
@@ -124,20 +141,34 @@
       els.volumeSlider.value = state.volume;
     }
 
+    puckLockout = state.puck_lockout || false;
+
     updatePlayButton();
     updateLoopButton();
+    updatePuckLockoutButton();
     highlightActiveTrack(currentTrackName);
   }
 
   // ── Fetch track list ──────────────────────────────────
 
+  async function deleteTrack(trackName) {
+    if (!confirm(`Delete "${trackName}"?`)) return;
+    await postJSON('/api/delete_track', { track_name: trackName });
+    fetchTrackList();
+  }
+
   async function fetchTrackList() {
     const data = await fetchJSON('/api/tracks');
     if (data && data.tracks) {
-      trackList = data.tracks;
-      // Update the DOM list
-      els.trackListGroup.innerHTML = trackList
-        .map((t) => `<button type="button" class="list-group-item list-group-item-action py-1" data-track="${t.replace(/"/g, '&quot;')}">${t.replace(/</g, '&lt;')}</button>`)
+      trackList = data.tracks.map((t) => t.track_name);
+      els.trackListGroup.innerHTML = data.tracks
+        .map((t) => {
+          const safeName = t.track_name.replace(/"/g, '&quot;').replace(/</g, '&lt;');
+          return `<div class="list-group-item list-group-item-action py-1 d-flex align-items-center" style="cursor:default">
+            <button type="button" class="flex-grow-1 text-start bg-transparent border-0 py-1" data-track="${safeName}">${safeName}</button>
+            <button type="button" class="btn btn-sm btn-outline-danger border-0 py-0 px-1 delete-track-btn" data-track="${safeName}" title="Delete">✕</button>
+          </div>`;
+        })
         .join('');
       attachTrackListEvents();
       highlightActiveTrack(currentTrackName);
@@ -189,8 +220,17 @@
   // ── Event binding ─────────────────────────────────────
 
   function attachTrackListEvents() {
-    els.trackListGroup.querySelectorAll('.list-group-item').forEach((el) => {
-      el.addEventListener('click', () => playTrack(el.dataset.track));
+    els.trackListGroup.querySelectorAll('[data-track]').forEach((el) => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        playTrack(el.dataset.track);
+      });
+    });
+    els.trackListGroup.querySelectorAll('.delete-track-btn').forEach((el) => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteTrack(el.dataset.track);
+      });
     });
   }
   attachTrackListEvents();
@@ -201,6 +241,8 @@
   els.nextBtn.addEventListener('click', nextTrack);
 
   els.loopBtn.addEventListener('click', () => postJSON('/api/toggle_loop'));
+
+  els.puckLockoutBtn.addEventListener('click', togglePuckLockout);
 
   els.volumeSlider.addEventListener('input', handleVolumeChange);
   els.volumeSlider.addEventListener('change', handleVolumeChange);
@@ -243,10 +285,45 @@
     }
   });
 
+  // ── Disk usage ────────────────────────────────────────
+
+  function formatBytes(bytes) {
+    if (bytes === 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + units[i];
+  }
+
+  async function fetchDiskUsage() {
+    const data = await fetchJSON('/api/disk_usage');
+    if (!data) return;
+    const pct = ((data.used / data.total) * 100).toFixed(1);
+    document.getElementById('diskUsage').innerHTML =
+      `<p><strong>Free:</strong> ${formatBytes(data.free)}</p>
+       <p><strong>Used:</strong> ${formatBytes(data.used)} / ${formatBytes(data.total)} (${pct}%)</p>
+       <div class="progress" style="height:8px;">
+         <div class="progress-bar bg-dark" style="width:${pct}%"></div>
+       </div>`;
+  }
+
+  // ── Restart Service ────────────────────────────────────
+
+  els.restartBtn = $('#restartBtn');
+  if (els.restartBtn) {
+    els.restartBtn.addEventListener('click', async () => {
+      if (!confirm('Restart the application service? This will interrupt playback.')) return;
+      els.restartBtn.disabled = true;
+      els.restartBtn.textContent = 'Restarting...';
+      await postJSON('/api/restart_service');
+    });
+  }
+
   // ── Init ──────────────────────────────────────────────
 
   fetchTrackList();
   pollState();
+  fetchDiskUsage();
   setInterval(pollState, 1000);
   setInterval(fetchTrackList, 10000);
+  setInterval(fetchDiskUsage, 30000);
 })();

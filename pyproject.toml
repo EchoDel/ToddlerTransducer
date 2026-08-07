@@ -3,7 +3,7 @@ name = "toddlertransducer"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "Edward Parry",email = "red_parry@yahoo.co.uk"}
+    {name = "Edward Parry",email = "edward@eparry.uk"}
 ]
 readme = "README.md"
 requires-python = ">=3.11"
@@ -12,8 +12,24 @@ dependencies = [
     "flask",
     "mfrc522;  platform_machine == 'aarch64'",
     "RPi.GPIO;  platform_machine == 'aarch64'",
-    "spidev;  platform_machine == 'aarch64'"
+    "spidev;  platform_machine == 'aarch64'",
 ]
+
+[project.optional-dependencies]
+puck-creation = [
+    "trimesh",
+    "numpy-stl",
+    "freetype-py",
+    "shapely",
+    "mapbox-earcut",
+    "networkx",
+    "lxml",
+    "scipy",
+    "manifold3d",
+    "numpy>=1.24,<2.5",
+    "pytubefix",
+]
+ai = ["hy3dgen"]
 
 [tool.pylint.main]
 source-roots = "./src/*"
@@ -31,6 +47,19 @@ isort = "^6.0.1"
 mypy = "^1.18.2"
 pylint = "^3.3.8"
 pytest = "8.4.2"
+pytest-cov = "^6.1.1"
+
+[tool.pytest.ini_options]
+addopts = "--cov --cov-report=html"
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["src/toddler_transducer/proxies/*"]
+
+[tool.coverage.html]
+directory = "coverage_html_report"
+
+
 
 
 [tool.poetry.group.deployment.dependencies]
@@ -44,3 +73,4 @@ build-backend = "poetry.core.masonry.api"
 launch_toddler_transducer_web_app = "toddler_transducer.web_ui.launch:launch_toddler_transducer_web_app"
 launch_dev_toddler_transducer_web_app = "toddler_transducer.web_ui.launch:launch_dev_toddler_transducer_web_app"
 launch_toddler_transducer = "toddler_transducer.__main__:main"
+launch_puck_creator = "toddler_transducer.puck_creator.launch:main"
