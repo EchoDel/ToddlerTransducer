@@ -74,6 +74,14 @@ Loop VLC, https://stackoverflow.com/questions/7214843/repeating-single-movie-usi
 
 # Install
 
+On a fresh raspberry pi run the install script. It clones the repo, installs
+VLC, poetry and the python dependencies, sets up the systemd service and
+configures automatic OTA updates.
+
+* `curl -sSL https://raw.githubusercontent.com/EchoDel/ToddlerTransducer/main/install/install.sh | bash`
+
+Or, to install manually:
+
 1. Set up a new raspberry pi
 2. Install VLC
    * `sudo apt install vlc`
