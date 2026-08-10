@@ -86,7 +86,7 @@ def get_sorted_backup_item(location: int) -> dict[datetime, str]:
     prior_backups = load_backup_metadata()
     if location < 0:
         sorted_dict = dict(sorted(prior_backups.items(), reverse=True))
-        location = -location - 1
+        location = - location
     else:
         sorted_dict = dict(sorted(prior_backups.items()))
     # https://stackoverflow.com/questions/16976096/take-the-first-x-elements-of-a-dictionary-on-python
