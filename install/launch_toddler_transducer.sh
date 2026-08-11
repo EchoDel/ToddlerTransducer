@@ -1,4 +1,4 @@
 #!/bin/bash
-cd "$HOME/ToddlerTransducer" || exit 1
-poetry install --with deployment
-poetry run launch_toddler_transducer
+cd /home/pi/ToddlerTransducer
+/home/pi/.local/bin/poetry install --with deployment
+/home/pi/.local/bin/poetry run launch_toddler_transducer
