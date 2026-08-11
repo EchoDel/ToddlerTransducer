@@ -1,5 +1,6 @@
 #!/bin/bash
 export PATH="$HOME/.local/bin:$PATH"
+export PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring
 cd "$(dirname "$(dirname "$(readlink -f "$0")")")" || exit 1
 git fetch
 LOCAL=$(git rev-parse HEAD)

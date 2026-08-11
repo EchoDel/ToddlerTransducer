@@ -66,6 +66,9 @@ if [ ! -x "$POETRY_BIN" ]; then
     echo ">> Installing poetry"
     as_user bash -c "curl -sSL https://install.python-poetry.org | python3 - --yes"
 fi
+# Disable the keyring so poetry never hangs waiting for a keyring password
+# on a headless device. https://github.com/python-poetry/poetry/issues/8759
+as_user env PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring "$POETRY_BIN" config keyring.enabled false
 
 # ---------------------------------------------------------------------------
 # 3. Clone the repository
@@ -86,7 +89,17 @@ as_user git -C "$INSTALL_DIR" lfs pull || true
 as_user git -C "$INSTALL_DIR" submodule update --init --recursive
 
 # ---------------------------------------------------------------------------
-# 4. Enable SPI (needed for the RFID reader)
+# 4. Seed the audio_files directory with the sample tracks
+# ---------------------------------------------------------------------------
+if [ ! -d "$INSTALL_DIR/audio_files" ]; then
+    echo ">> Copying sample audio files into audio_files"
+    as_user bash -c "mkdir -p '$INSTALL_DIR/audio_files' && cp -n '$INSTALL_DIR'/sample_audio_files/* '$INSTALL_DIR'/audio_files/"
+else
+    echo ">> audio_files already present, leaving it untouched"
+fi
+
+# ---------------------------------------------------------------------------
+# 5. Enable SPI (needed for the RFID reader)
 # ---------------------------------------------------------------------------
 echo ">> Enabling the SPI interface"
 if command -v raspi-config >/dev/null 2>&1; then
@@ -103,13 +116,13 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 5. Install the python dependencies with poetry
+# 6. Install the python dependencies with poetry
 # ---------------------------------------------------------------------------
 echo ">> Installing python dependencies with poetry"
-as_user bash -c "cd '$INSTALL_DIR' && '$POETRY_BIN' install --with deployment"
+as_user bash -c "export PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring; cd '$INSTALL_DIR' && '$POETRY_BIN' install --with deployment"
 
 # ---------------------------------------------------------------------------
-# 6. systemd service
+# 7. systemd service
 # ---------------------------------------------------------------------------
 if [ "${TT_SKIP_SERVICE:-0}" != "1" ]; then
     echo ">> Setting up the ToddlerTransducer systemd service"
@@ -124,7 +137,7 @@ if [ "${TT_SKIP_SERVICE:-0}" != "1" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 7. Automatic updates (cron every 5 minutes + passwordless systemctl)
+# 8. Automatic updates (cron every 5 minutes + passwordless systemctl)
 # ---------------------------------------------------------------------------
 if [ "${TT_SKIP_OTA:-0}" != "1" ]; then
     echo ">> Setting up automatic updates"
