@@ -1,22 +1,17 @@
 #!/bin/bash
-# Check for updates
-cd /home/pi/ToddlerTransducer/
+export PATH="$HOME/.local/bin:$PATH"
+cd "$(dirname "$(dirname "$(readlink -f "$0")")")" || exit 1
 git fetch
 LOCAL=$(git rev-parse HEAD)
 REMOTE=$(git rev-parse @{u})
-if [ $LOCAL != $REMOTE ]; then
-echo "Repository is outdated. Updating…"
-# git pull
-# Download updates
-# git checkout master
-git pull
-# Stop the service
-sudo systemctl stop ToddlerTransducer.service
-# Build and update the requirements and package
-poetry install
-poetry build
-# Restart the application
-sudo systemctl start ToddlerTransducer.service
+if [ "$LOCAL" != "$REMOTE" ]; then
+    echo "Repository is outdated. Updating..."
+    git pull
+    git submodule update --init --recursive
+    sudo systemctl stop ToddlerTransducer.service
+    poetry install
+    poetry build
+    sudo systemctl start ToddlerTransducer.service
 else
-echo "Repository is up to date."
+    echo "Repository is up to date."
 fi

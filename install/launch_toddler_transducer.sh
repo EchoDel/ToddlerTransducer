@@ -1,4 +1,4 @@
 #!/bin/bash
-cd /home/pi/ToddlerTransducer
-/home/pi/.local/bin/poetry install --with deployment
-/home/pi/.local/bin/poetry run launch_toddler_transducer
+cd "$(dirname "$(dirname "$(readlink -f "$0")")")"
+"$HOME/.local/bin/poetry" install --with deployment
+"$HOME/.local/bin/poetry" run launch_toddler_transducer
