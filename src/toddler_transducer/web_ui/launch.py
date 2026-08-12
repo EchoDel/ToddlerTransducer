@@ -3,6 +3,7 @@ Web UI Launch
 
 Launch the web app to play audio.
 """
+
 import threading
 import time
 from multiprocessing.managers import ValueProxy, DictProxy
@@ -23,11 +24,14 @@ def start_background_services() -> None:
 
     def advertise_loop() -> None:
         zeroconf_instance = None
+        consecutive_failures = 0
         while True:
             if is_master() and zeroconf_instance is None:
                 try:
                     zeroconf_instance = advertise(WEB_UI_PORT, get_device_name())
+                    consecutive_failures = 0
                 except Exception:
+                    consecutive_failures += 1
                     zeroconf_instance = None
             elif not is_master() and zeroconf_instance is not None:
                 try:
@@ -35,13 +39,14 @@ def start_background_services() -> None:
                 except Exception:
                     pass
                 zeroconf_instance = None
-            time.sleep(10)
+            time.sleep(min(10 * 2 ** min(consecutive_failures, 3), 60))
 
     threading.Thread(target=advertise_loop, daemon=True).start()
 
 
-def launch_toddler_transducer_web_app(rfid_tag_proxy: ValueProxy | None = None,
-                                      vlc_playback_manager: DictProxy | None = None) -> None:
+def launch_toddler_transducer_web_app(
+    rfid_tag_proxy: ValueProxy | None = None, vlc_playback_manager: DictProxy | None = None
+) -> None:
     """Launch the web app through Waitress (production).
 
     Args:
@@ -51,15 +56,17 @@ def launch_toddler_transducer_web_app(rfid_tag_proxy: ValueProxy | None = None,
     if rfid_tag_proxy is None:
         rfid_tag_proxy = MultithreadingValueProxy()
     from waitress import serve
+
     add_root_routes(flask_app, rfid_tag_proxy, vlc_playback_manager)
     add_device_routes(flask_app)
     start_background_services()
-    print(f'Launching server at https://localhost:{WEB_UI_PORT}')
+    print(f"Launching server at https://localhost:{WEB_UI_PORT}")
     serve(flask_app, host="0.0.0.0", port=WEB_UI_PORT)
 
 
-def launch_dev_toddler_transducer_web_app(rfid_tag_proxy: ValueProxy | None = None,
-                                          vlc_playback_manager: DictProxy | None = None) -> None:
+def launch_dev_toddler_transducer_web_app(
+    rfid_tag_proxy: ValueProxy | None = None, vlc_playback_manager: DictProxy | None = None
+) -> None:
     """Launch the web app through Flask (development).
 
     Args:

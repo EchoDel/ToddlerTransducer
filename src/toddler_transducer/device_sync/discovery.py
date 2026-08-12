@@ -12,7 +12,7 @@ from dataclasses import dataclass
 
 from zeroconf import ServiceBrowser, ServiceInfo, ServiceListener, Zeroconf
 
-SERVICE_TYPE = "_toddlertransducer._tcp.local."
+SERVICE_TYPE = "_toddlertx._tcp.local."
 
 
 def _decode(value) -> str:
@@ -63,7 +63,11 @@ def advertise(port: int, device_name: str) -> Zeroconf:
         properties={"role": "master", "device_name": device_name},
     )
     zc = Zeroconf()
-    zc.register_service(info)
+    try:
+        zc.register_service(info)
+    except Exception:
+        zc.close()
+        raise
     return zc
 
 

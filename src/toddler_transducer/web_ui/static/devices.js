@@ -4,7 +4,23 @@ let devicesScanned = [];
 function devicesJson(url, options) {
   const opts = options || {};
   opts.headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
-  return fetch(url, opts).then((resp) => resp.json().then((data) => ({ ok: resp.ok, data })));
+  return fetch(url, opts).then(
+    (resp) =>
+      resp.text().then((text) => {
+        let data = {};
+        try {
+          data = JSON.parse(text);
+        } catch (err) {
+          data = { error: 'Server error (' + resp.status + '): ' + String(text).slice(0, 300) };
+        }
+        return { ok: resp.ok, data };
+      }),
+    () => ({ ok: false, data: { error: 'Network error - is the server running?' } }),
+  );
+}
+
+function devicesError(data) {
+  return window.alert('Failed: ' + (data && data.error ? data.error : 'unknown error'));
 }
 
 function devicesEscape(text) {
@@ -80,12 +96,20 @@ function devicesRender(state) {
   const saveRoleBtn = document.getElementById('saveRoleBtn');
   if (saveRoleBtn) {
     saveRoleBtn.addEventListener('click', async () => {
-      const selected = document.querySelector('input[name="deviceRole"]:checked');
-      if (!selected) return;
-      const target = selected.value;
-      if (target !== role && !window.confirm(`Switch this device to ${target} mode?`)) return;
-      const { data } = await devicesJson('/api/devices/role', { method: 'POST', body: JSON.stringify({ role: target }) });
-      if (data.ok) devicesLoad();
+      try {
+        const selected = document.querySelector('input[name="deviceRole"]:checked');
+        if (!selected) return;
+        const target = selected.value;
+        if (target !== role && !window.confirm(`Switch this device to ${target} mode?`)) return;
+        const { ok, data } = await devicesJson('/api/devices/role', { method: 'POST', body: JSON.stringify({ role: target }) });
+        if (!ok) {
+          devicesError(data);
+          return;
+        }
+        devicesLoad();
+      } catch (exc) {
+        window.alert('Failed to save role: ' + exc);
+      }
     });
   }
 
@@ -173,7 +197,11 @@ function devicesRender(state) {
 async function devicesLoad() {
   const el = document.getElementById(DEVICES_SECTION_ID);
   if (!el) return;
-  const { data } = await devicesJson('/api/devices/status');
+  const { ok, data } = await devicesJson('/api/devices/status');
+  if (!ok) {
+    el.innerHTML = `<p class="text-danger">Could not load device status: ${devicesEscape(data.error || 'unknown error')}</p>`;
+    return;
+  }
   devicesRender(data);
 }
 
