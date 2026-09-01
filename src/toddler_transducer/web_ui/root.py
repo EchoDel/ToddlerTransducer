@@ -237,7 +237,7 @@ def add_root_routes(flask_app: Flask, rfid_tag_proxy: ValueProxy,
     @flask_app.route('/backup_audio', methods=['GET'])
     def download_backup():
         """Download the latest audio backup ZIP."""
-        latest_backup = get_sorted_backup_item(1)
+        latest_backup = get_sorted_backup_item(-1)
         backup_location = next(iter(latest_backup.values()))
         backup_location = Path(__file__).parents[3] / backup_location
         # https://stackoverflow.com/questions/24577349/flask-download-a-file
